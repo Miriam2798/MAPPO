@@ -1,4 +1,4 @@
-# PAE_Reby
+# MAPPO
 
 ## Pollution Maps Generator
 ### Installation
