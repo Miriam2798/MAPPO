@@ -9,7 +9,7 @@ pip install -r requirements.txt
 ### Usage 
 Just run it with Python 3.10.0 using the following command line:
 ```
-python pollutionmap.py
+python3 pollutionmap.py
 ```
 Default parameters are suggested before inputing the desired number.
 
