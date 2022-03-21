@@ -37,9 +37,8 @@ def export(im):
     listj = im.tolist()
     mapdata = json.dumps(listj)
 
-    # Export to json file called map.json
-    with open('map.json', 'w') as json_file:
-        json.dump(mapdata, json_file)
+    # Export to json file called map.csv
+    np.savetxt("map.csv", im, delimiter=",")
 
 
 def main():
@@ -76,7 +75,7 @@ def main():
     plt.imshow(im, origin='lower', extent=extent, cmap=cm.turbo)
     plt.show()
 
-    # Export as JSON
+    # Export as a csv file
     export(im)
 
 
