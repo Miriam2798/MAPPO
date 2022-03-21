@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import json
 import time
 
 
@@ -33,11 +32,7 @@ def nearest_neighbours(xs, ys, reso, n_neighbours):
 
 # Exporting to JSON function
 def export(im):
-    # Transform im matrix to list
-    listj = im.tolist()
-    mapdata = json.dumps(listj)
-
-    # Export to json file called map.csv
+    # Export to csv file called map.csv
     np.savetxt("map.csv", im, delimiter=",")
 
 
