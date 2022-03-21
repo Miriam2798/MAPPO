@@ -1,10 +1,9 @@
-import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import time
 
-
+# Transforms the matrix values of map.csv into 0 or 1 depending on the threshold value th
 def transform(matrix, th):
     for row in range(len(matrix)):
         for col in range(len(matrix[row])):
