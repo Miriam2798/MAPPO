@@ -1,6 +1,6 @@
 # MAPPO
 
-![MAPPO](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/mappo.PNG)
+![MAPPO](https://github.com/annapuig/MAPPO/blob/main/Pictures/mappo.jpg)
 
 ## Optimal Routing
 ### Installation
@@ -40,7 +40,7 @@ Default values are advised as the final output may vary depending on the paramet
 After running the script, a file called `map.csv` should appear. This file has all the values stored in a two dimensional matrix.
 The script will also show the heatmap of the actual generated pollution map.
 
-![Pollution Map](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/Pollutionmap.PNG)
+![Pollution Map](https://github.com/annapuig/MAPPO/blob/main/Pictures/Pollutionmap.PNG)
 
 ## 2. Transform map
 ### Installation
@@ -59,7 +59,7 @@ Default parameters are suggested before inputing the desired number.
 After running the script, a file called `bordermap.csv` should appear. This file has all the values stored in a two dimensional matrix.
 The script will show a binary map of the values that are taken into account depending on the threshold value
 
-![Transform Map](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/Transformap.PNG)
+![Transform Map](https://github.com/annapuig/MAPPO/blob/main/Pictures/Transformap.png)
 
 ## 3. Fastest Path
 ### Installation
@@ -77,4 +77,4 @@ Default parameters are suggested before inputing the desired number.
 ### Output
 After running the script, it will show a the actual graph map with all the nodes and the optimal fastest route depending on lenght.
 
-![Fastest Path](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/fastestpath.PNG)
+![Fastest Path](https://github.com/annapuig/MAPPO/blob/main/Pictures/fastestpath.png)
