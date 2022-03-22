@@ -1,5 +1,7 @@
 # MAPPO
 
+![MAPPO](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/mappo.PNG)
+
 ## Optimal Routing
 ### Installation
 In order to use the pollution maps generator you must import the modules required using the following command line:
@@ -38,6 +40,8 @@ Default values are advised as the final output may vary depending on the paramet
 After running the script, a file called `map.csv` should appear. This file has all the values stored in a two dimensional matrix.
 The script will also show the heatmap of the actual generated pollution map.
 
+![Pollution Map](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/Pollutionmap.PNG)
+
 ## 2. Transform map
 ### Installation
 In order to use the pollution maps generator you must import the modules required using the following command line:
@@ -55,6 +59,8 @@ Default parameters are suggested before inputing the desired number.
 After running the script, a file called `bordermap.csv` should appear. This file has all the values stored in a two dimensional matrix.
 The script will show a binary map of the values that are taken into account depending on the threshold value
 
+![Transform Map](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/Transformap.PNG)
+
 ## 3. Fastest Path
 ### Installation
 In order to use the pollution maps generator you must import the modules required using the following command line:
@@ -70,3 +76,5 @@ Default parameters are suggested before inputing the desired number.
 
 ### Output
 After running the script, it will show a the actual graph map with all the nodes and the optimal fastest route depending on lenght.
+
+![Fastest Path](https://raw.githubusercontent.com/annapuig/MAPPO/blob/main/Pictures/fastestpath.PNG)
