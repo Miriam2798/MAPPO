@@ -3,24 +3,24 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import time
 
+
 # Transforms the matrix values of map.csv into 0 or 1 depending on the threshold value th
 def transform(matrix, th):
     for row in range(len(matrix)):
         for col in range(len(matrix[row])):
-            if (matrix[row][col] > float(th)):
-                matrix[row][col] = 1
-            else:
-                matrix[row][col] = 0
+            matrix[row][col] = 1 if (matrix[row][col] > float(th)) else 0
     return matrix
 
 
 def main():
-    print(r"""   _____      _____ ____________________________   
-  /     \    /  _  \\______   \______   \_____  \  
- /  \ /  \  /  /_\  \|     ___/|     ___//   |   \ 
-/    Y    \/    |    \    |    |    |   /    |    \
-\____|__  /\____|__  /____|    |____|   \_______  /
-        \/         \/                           \/ v0.1 """)
+    print(
+        r"""___________                              _____                         _____                 
+\__    ___/___________    ____   _______/ ____\___________  _____     /     \ _____  ______  
+  |    |  \_  __ \__  \  /    \ /  ___/\   __\/  _ \_  __ \/     \   /  \ /  \\__  \ \____ \ 
+  |    |   |  | \// __ \|   |  \\___ \  |  | (  <_> )  | \/  Y Y  \ /    Y    \/ __ \|  |_> >
+  |____|   |__|  (____  /___|  /____  > |__|  \____/|__|  |__|_|  / \____|__  (____  /   __/ 
+                      \/     \/     \/                          \/          \/     \/|__|"""
+    )
     time.sleep(1)
     matrix = np.loadtxt(open("map.csv", "rb"), delimiter=",", skiprows=1)
     th = input("Please define your Threshold: ")
@@ -29,6 +29,3 @@ def main():
     print(bordermatrix)
     plt.imshow(bordermatrix, cmap=cm.binary)
     plt.show()
-
-
-main()
