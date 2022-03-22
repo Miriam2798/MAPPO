@@ -26,6 +26,5 @@ def main():
     th = input("Please define your Threshold: ")
     bordermatrix = transform(matrix, th)
     np.savetxt("bordermap.csv", bordermatrix, delimiter=",")
-    print(bordermatrix)
     plt.imshow(bordermatrix, cmap=cm.binary)
     plt.show()
