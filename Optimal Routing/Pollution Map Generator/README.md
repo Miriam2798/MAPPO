@@ -1,6 +1,22 @@
 # MAPPO
 
-## Pollution Maps Generator
+## Optimal Routing
+### Installation
+In order to use the pollution maps generator you must import the modules required using the following command line:
+```
+pip install -r requirements.txt
+```
+### Usage
+Just run it with Python 3.10.0 using the following command line:
+```
+python3 menu.py
+```
+A menu will show up, with different options to select
+
+### Hint
+All the different points are explained below, along the individual installation and usage procedures
+
+## 1. Pollution Maps Generator
 ### Installation
 In order to use the pollution maps generator you must import the modules required using the following command line:
 ```
@@ -19,5 +35,38 @@ The script will ask for some input parameters. First input are the desired gener
 Default values are advised as the final output may vary depending on the parameters. In order to adjust as much as possible to reality, we will use the ones mentioned before, as in our opinion, are more realistic than other tested parameters. Also, increasing generated points will not affect the output of the simulation but the computational speed. You may try higher numbers, but the output time will be higher.
 
 ### Output
-After running the script, a file called `map.json` should appear. This file has all the values stored in a two dimensional matrix.
+After running the script, a file called `map.csv` should appear. This file has all the values stored in a two dimensional matrix.
 The script will also show the heatmap of the actual generated pollution map.
+
+## 2. Transform map
+### Installation
+In order to use the pollution maps generator you must import the modules required using the following command line:
+```
+pip install -r requirements.txt
+```
+### Usage 
+Just run it with Python 3.10.0 using the following command line:
+```
+python3 transformap.py
+```
+Default parameters are suggested before inputing the desired number.
+
+### Output
+After running the script, a file called `bordermap.csv` should appear. This file has all the values stored in a two dimensional matrix.
+The script will show a binary map of the values that are taken into account depending on the threshold value
+
+## 3. Fastest Path
+### Installation
+In order to use the pollution maps generator you must import the modules required using the following command line:
+```
+pip install -r requirements.txt
+```
+### Usage 
+Just run it with Python 3.10.0 using the following command line:
+```
+python3 fastestpath.py
+```
+Default parameters are suggested before inputing the desired number.
+
+### Output
+After running the script, it will show a the actual graph map with all the nodes and the optimal fastest route depending on lenght.
