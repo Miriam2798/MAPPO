@@ -5,7 +5,7 @@ import time
 
 
 def fastest_route(originx, originy, destinationx, destinationy, place):
-    G = ox.graph_from_place(place)
+    G = ox.graph_from_place(place, network_type='drive')
     origin_xy = tuple((float(originx), float(originy)))
     destination_xy = tuple((float(destinationx), float(destinationy)))
     origin_node = ox.get_nearest_node(G, origin_xy)
