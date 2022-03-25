@@ -10,14 +10,12 @@ First you have to enter to the virtual environment using:
 
 ```
 cd deploy
-
 ```
 
 and then
 
 ```
 . deploy/bin/activate
-
 ```
 
 
@@ -25,13 +23,17 @@ In order to run the main script using the virtual environvent you must import th
 
 ```
 pip install -r deploy/mappo/pollutionpae/requirements.txt
-
 ```
 
 Then you can run the main script doing
 
 ```
 python deploy/mappo/pollutionpae/main.py
+```
 
+To leave from the virtual environment (deploy) just type
+
+```
+deactivate
 ```
 
