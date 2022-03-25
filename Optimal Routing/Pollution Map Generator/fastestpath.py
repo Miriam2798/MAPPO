@@ -5,17 +5,18 @@ import time
 import os.path
 
 
+# If exists, imports the graph from the file. The file is created after searching for a place once and for each one
 def importFile(place):
     if os.path.exists(f'{place}_graph.txt'):
         return ox.load_graphml(f'{place}_graph.txt')
-    print(
-        "\nFirst time running the script for "+place+". Loading and Saving graph...\n"
-    )
+    print("\nFirst time running the script for " + place +
+          ". Loading and Saving graph...\n")
     G = ox.graph_from_place(place, network_type='drive')
     ox.save_graphml(G, f"{place}_graph.txt")
     return G
 
 
+# Calculates the fastest route of a place
 def fastest_route(originx, originy, destinationx, destinationy, place):
     #G = ox.graph_from_place(place, network_type='drive')
     G = importFile(place)
