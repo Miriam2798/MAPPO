@@ -2,6 +2,7 @@ import fastestpath as fp
 import pollutionmap as pm
 import transformap as tm
 import time
+import os
 
 
 def menu():
@@ -20,8 +21,10 @@ def menu():
 
 loop = True
 while True:
+    os.system('cls' if os.name == 'nt' else 'clear')
     menu()
     choice = input("Enter your choice [1-4]: \n")
+    os.system('cls' if os.name == 'nt' else 'clear')
     if choice == "1":
         pm.main()
     elif choice == "2":
@@ -30,6 +33,7 @@ while True:
         fp.main()
     elif choice == "4":
         loop = False
+        os.system('cls' if os.name == 'nt' else 'clear')
         break
     else:
         input("Wrong Option. Press any key to try again")

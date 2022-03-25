@@ -2,10 +2,23 @@ import osmnx as ox
 import networkx as nx
 import taxicab as tc
 import time
+import os.path
+
+
+def importFile(place):
+    if os.path.exists(f'{place}_graph.txt'):
+        return ox.load_graphml(f'{place}_graph.txt')
+    print(
+        "\nFirst time running the script for "+place+". Loading and Saving graph...\n"
+    )
+    G = ox.graph_from_place(place, network_type='drive')
+    ox.save_graphml(G, f"{place}_graph.txt")
+    return G
 
 
 def fastest_route(originx, originy, destinationx, destinationy, place):
-    G = ox.graph_from_place(place, network_type='drive')
+    #G = ox.graph_from_place(place, network_type='drive')
+    G = importFile(place)
     origin_xy = tuple((float(originx), float(originy)))
     destination_xy = tuple((float(destinationx), float(destinationy)))
     origin_node = ox.get_nearest_node(G, origin_xy)
