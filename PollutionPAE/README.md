@@ -18,13 +18,13 @@ and then
 . deploy/bin/activate
 ```
 
-### Run
-
 In order to run the main script using the virtual environvent you must import the modules required using the following command line:
 
 ```
 pip install -r deploy/mappo/pollutionpae/requirements.txt
 ```
+
+### Run
 
 Then you can run the main script doing
 
