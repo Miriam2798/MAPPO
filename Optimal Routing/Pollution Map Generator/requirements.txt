@@ -3,3 +3,4 @@ networkx==2.7.1
 numpy==1.22.3
 osmnx==1.1.2
 Taxicab==0.0.3
+scikit-learn==1.0.2
