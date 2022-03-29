@@ -3,6 +3,19 @@ import networkx as nx
 import taxicab as tc
 import time
 import os.path
+import numpy as np
+import csv
+
+
+class Node:
+
+    def __init__(self, y, x, id):
+        self.y = y
+        self.x = x
+        self.id = id
+
+    def __repr__(self):
+        return f"{self.id}, {self.y}, {self.x}"
 
 
 # If exists, imports the graph from the file. The file is created after searching for a place once and for each one
@@ -18,7 +31,6 @@ def importFile(place):
 
 # Calculates the fastest route of a place
 def fastest_route(originx, originy, destinationx, destinationy, place):
-    #G = ox.graph_from_place(place, network_type='drive')
     G = importFile(place)
     origin_xy = tuple((float(originx), float(originy)))
     destination_xy = tuple((float(destinationx), float(destinationy)))
@@ -29,7 +41,21 @@ def fastest_route(originx, originy, destinationx, destinationy, place):
                              target=destination_node,
                              weight='length')
     routeTC = tc.distance.shortest_path(G, origin_xy, destination_xy)
-    return routeTC, G
+    return routeTC, G, route
+
+
+def export(G, routeTC):
+    # print(routeTC[1])
+    nodelist = []
+    for i in range(int(len(routeTC[1]))):
+        y = G.nodes[routeTC[1][i]]['y']
+        x = G.nodes[routeTC[1][i]]['x']
+        nodelist.append(Node(y, x, routeTC[1][i]))
+    # print(nodelist)
+    with open("route.csv", "w") as output:
+        writer = csv.writer(output, lineterminator='\n')
+        for val in nodelist:
+            writer.writerow([val])
 
 
 def main():
@@ -49,6 +75,15 @@ def main():
     destinationx, destinationy = input(
         "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
     ).split(", ")
-    routeTC, G = fastest_route(originx, originy, destinationx, destinationy,
-                               place)
-    fig, ax = tc.plot.plot_graph_route(G, routeTC)
+    routeTC, G, route = fastest_route(originx, originy, destinationx,
+                                      destinationy, place)
+
+    export(G, routeTC)
+
+    fig, ax = tc.plot.plot_graph_route(
+        G,
+        routeTC,
+        route_color="r",
+        orig_dest_size=100,
+        ax=None,
+    )
