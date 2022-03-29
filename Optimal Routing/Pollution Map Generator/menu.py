@@ -14,7 +14,7 @@ def menu():
         \/         \/                           \/ v0.2 """)
     time.sleep(1)
     print("1. Simulate Pollution Map \n")
-    print("2. Transform Pollution Map \n")
+    print("2. Transform Pollution Map (DEPRECATED)\n")
     print("3. Calculate Fastest Route \n")
     print("4. Exit \n")
 
