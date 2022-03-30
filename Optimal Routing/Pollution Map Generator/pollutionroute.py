@@ -60,27 +60,34 @@ for row in range(len(pollutionMatrix)):
         points.append(Point(y, x, pollutionMatrix[row][col]))
         if y >= max(nodes['y']):
             y = min(nodes['y'])
-        y = y + 1e-3
+        y = y + 1e-2
     if x <= min(nodes['x']):
         x = max(nodes['x'])
-    x = x - 1e-3
+    x = x - 1e-2
     if (y >= max(nodes['y']) and x <= min(nodes['x'])):
         break
 value = 0
 selnode = 0
 print(points)
-pdist = 10000000
+pdist = 1000
+first = True
 for p in range(len(points)):
     x = points[p].getX()
     y = points[p].getY()
     point = tuple((float(y), float(x)))
     print(point)
-    selectedNode, dist = ox.get_nearest_node(G, point, return_dist=True)
-    #print(dist)
-    if dist < pdist:
+    selectedNode, dist = ox.get_nearest_node(Gnx, point, return_dist=True)
+    print(dist)
+    print(points[p].getValue())
+    if dist < 2000:
+        nodes['Pollution'][int(selectedNode)] = float(points[p].getValue())
+    if (float(dist) < float(pdist)) or first:
         pdist = dist
-        selNode = int(selectedNode)
+        selNode = selectedNode
         value = points[p].getValue()
-        print(value)
-nodes[selnode]['Pollution'] = float(value)
-print(nodes)
+    first = False
+print(selNode)
+nodes['Pollution'][int(selNode)] = float(value)
+
+for node in range(len(nodes)):
+    print(nodes['Pollution'][node])
