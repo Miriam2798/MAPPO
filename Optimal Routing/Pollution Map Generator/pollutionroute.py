@@ -42,10 +42,14 @@ print(min(nodes['y']))
 print(max(nodes['x']))
 print(min(nodes['x']))
 
-cols = int(round(max(nodes['x']) - min(nodes['x']), 6) * 100)
-rows = int(round(max(nodes['y']) - min(nodes['y']), 6) * 100)
+rows = float(round(max(nodes['y']) - min(nodes['y']), 6))
+cols = float(round(max(nodes['x']) - min(nodes['x']), 6))
 
-print(int(rows), int(cols))
+reso = 100
+incrow = round(rows / reso, 6)
+incol = round(cols / reso, 6)
+
+print(float(incrow), float(incol))
 matrix = np.zeros((int(rows), int(cols)))  # np.zeros(int(rows),int(cols))
 
 # Having troubles running through the matrix
@@ -57,13 +61,16 @@ x = max(nodes['x'])
 # Completely wrong lmao
 for row in range(len(pollutionMatrix)):
     for col in range(len(pollutionMatrix[row])):
-        points.append(Point(y, x, pollutionMatrix[row][col]))
+        points.append(
+            Point(round(y, 6), round(x, 6), pollutionMatrix[row][col]))
         if y >= max(nodes['y']):
-            y = min(nodes['y'])
-        y = y + 1e-2
+            y = round(min(nodes['y']), 6)
+        y = y + incol
+        y = round(y, 6)
     if x <= min(nodes['x']):
-        x = max(nodes['x'])
-    x = x - 1e-2
+        x = round(max(nodes['x']), 6)
+    x = x - incrow
+    x = round(x, 6)
     if (y >= max(nodes['y']) and x <= min(nodes['x'])):
         break
 value = 0
@@ -90,4 +97,21 @@ print(selNode)
 nodes['Pollution'][int(selNode)] = float(value)
 
 for node in range(len(nodes)):
-    print(nodes['Pollution'][node])
+    if nodes['Pollution'][node] > 0:
+        print(nodes['Pollution'][node])
+
+G2 = ox.graph_from_gdfs(nodes, edges)
+origin_node = ox.get_nearest_node(G2, (41.56538214481594, 2.010169694600521))
+destination_node = ox.get_nearest_node(G2,
+                                       (41.56312304751537, 2.0302406158505706))
+route = nx.shortest_path(G=G2,
+                         source=origin_node,
+                         target=destination_node,
+                         weight='Pollution')
+fig, ax = ox.plot_graph_route(
+    G2,
+    route,
+    route_color="r",
+    orig_dest_size=100,
+    ax=None,
+)
