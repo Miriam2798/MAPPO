@@ -1,35 +1,93 @@
+# TEST SCRIPT, DO NOT TRY TO USE LOL
+
 import osmnx as ox
 import networkx as nx
 import numpy as np
+import math
+
+
+class Point:
+
+    def __init__(self, y, x, value):
+        self.y = y
+        self.x = x
+        self.value = value
+
+    def __repr__(self):
+        return f"[{self.y}, {self.x}, {self.value}]"
+
+    def getY(self):
+        return self.y
+
+    def getX(self):
+        return self.x
+
+    def getValue(self):
+        return self.value
+
 
 city = "Terrassa"
 G = ox.graph_from_place(city, network_type='drive')
 Gnx = nx.relabel.convert_node_labels_to_integers(G)
 nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 
-nodes['Pollution'] = 0
+nodes['Pollution'] = float(0)
 
-pollutionmat = np.loadtxt(open("map.csv", "rb"), delimiter=",", skiprows=1)
+pollutionMatrix = np.loadtxt(open("map.csv", "rb"), delimiter=",", skiprows=1)
 
 print(nodes)
 
-print(int(max(nodes['y']) * 1000000))
+print(max(nodes['y']))
 print(min(nodes['y']))
-print(max(nodes['x']) * 10000000)
+print(max(nodes['x']))
 print(min(nodes['x']))
 
-rows = max(nodes['x']) * 100000 - min(nodes['x']) * 100000
-cols = max(nodes['y']) * 10000 - min(nodes['y']) * 10000
+cols = int(round(max(nodes['x']) - min(nodes['x']), 6) * 100)
+rows = int(round(max(nodes['y']) - min(nodes['y']), 6) * 100)
+
 print(int(rows), int(cols))
 matrix = np.zeros((int(rows), int(cols)))  # np.zeros(int(rows),int(cols))
 
-# Number of rows and cols from coordinates is too high. Currently not been able to map the coordinates with the values
+# Having troubles running through the matrix
+points = []
 
-for i in range(int(rows)):
-    for j in range(int(cols)):
-        matrix[i][j] = pollutionmat[i][j]
+y = min(nodes['y'])
+x = max(nodes['x'])
 
-print(matrix)
+# Completely wrong lmao
+for row in range(len(pollutionMatrix)):
+    for col in range(len(pollutionMatrix[row])):
+        points.append(Point(y, x, pollutionMatrix[row][col]))
+        if y >= max(nodes['y']):
+            y = min(nodes['y'])
+        y = y + 1e-2
+    if x <= min(nodes['x']):
+        x = max(nodes['x'])
+    x = x - 1e-2
+    if (y >= max(nodes['y']) and x <= min(nodes['x'])):
+        break
+value = 0
+selnode = 0
+print(points)
+pdist = 1000
+first = True
+for p in range(len(points)):
+    x = points[p].getX()
+    y = points[p].getY()
+    point = tuple((float(y), float(x)))
+    print(point)
+    selectedNode, dist = ox.get_nearest_node(Gnx, point, return_dist=True)
+    print(dist)
+    print(points[p].getValue())
+    if dist < 2000:
+        nodes['Pollution'][int(selectedNode)] = float(points[p].getValue())
+    if (float(dist) < float(pdist)) or first:
+        pdist = dist
+        selNode = selectedNode
+        value = points[p].getValue()
+    first = False
+print(selNode)
+nodes['Pollution'][int(selNode)] = float(value)
 
-# We need to sort the nodes by location. Once sorted, we can add the pollution values of the map to each node. Then remove the nodes that are above our pollution threshold.
-# If removing nodes causes some kind of trouble, we should consider modifying networkx weighted shortestpath function in order to stablish a new rule.
+for node in range(len(nodes)):
+    print(nodes['Pollution'][node])
