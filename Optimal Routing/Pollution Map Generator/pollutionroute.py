@@ -18,7 +18,6 @@ print(min(nodes['y']))
 print(max(nodes['x']) * 10000000)
 print(min(nodes['x']))
 
-# Hotfix for interpreting float as an int
 rows = max(nodes['x']) * 100000 - min(nodes['x']) * 100000
 cols = max(nodes['y']) * 10000 - min(nodes['y']) * 10000
 print(int(rows), int(cols))
