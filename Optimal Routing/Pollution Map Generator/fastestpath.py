@@ -3,6 +3,21 @@ import networkx as nx
 import taxicab as tc
 import time
 import os.path
+import numpy as np
+import csv
+
+
+#Definition of a node object, with its attributes Node(float y, float x, int id)
+class Node:
+
+    def __init__(self, y, x, id):
+        self.y = y
+        self.x = x
+        self.id = id
+
+    # ToString function. Returns the id, and y, x coordinates
+    def __repr__(self):
+        return f"{self.id}, {self.y}, {self.x}"
 
 
 # If exists, imports the graph from the file. The file is created after searching for a place once and for each one
@@ -18,18 +33,37 @@ def importFile(place):
 
 # Calculates the fastest route of a place
 def fastest_route(originx, originy, destinationx, destinationy, place):
-    #G = ox.graph_from_place(place, network_type='drive')
+    #Imports the graph
     G = importFile(place)
+    #Generates tuples from the given coordinates
     origin_xy = tuple((float(originx), float(originy)))
     destination_xy = tuple((float(destinationx), float(destinationy)))
+    #Finds the nearest node from a location point
     origin_node = ox.get_nearest_node(G, origin_xy)
     destination_node = ox.get_nearest_node(G, destination_xy)
+    #Finds the shortest path and stores it into the route object. Using length argument to find the shortest path in terms of length
     route = nx.shortest_path(G=G,
                              source=origin_node,
                              target=destination_node,
                              weight='length')
+    #Using Taxicab library to normalize the start and end of the route, as it won't always start in a node location
     routeTC = tc.distance.shortest_path(G, origin_xy, destination_xy)
-    return routeTC, G
+    return routeTC, G, route
+
+
+#Exports the route into a route.csv file
+def export(G, routeTC):
+    nodelist = []
+    #Iterate the nodes to extrat all the coordinates along with its ids
+    for i in range(int(len(routeTC[1]))):
+        y = G.nodes[routeTC[1][i]]['y']
+        x = G.nodes[routeTC[1][i]]['x']
+        nodelist.append(Node(y, x, routeTC[1][i]))
+    #Create and write the node stored into nodelist to a route.csv file
+    with open("route.csv", "w") as output:
+        writer = csv.writer(output, lineterminator='\n')
+        for val in nodelist:
+            writer.writerow([val])
 
 
 def main():
@@ -49,6 +83,17 @@ def main():
     destinationx, destinationy = input(
         "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
     ).split(", ")
-    routeTC, G = fastest_route(originx, originy, destinationx, destinationy,
-                               place)
-    fig, ax = tc.plot.plot_graph_route(G, routeTC)
+    #Calculate fastest route given the inputs
+    routeTC, G, route = fastest_route(originx, originy, destinationx,
+                                      destinationy, place)
+    #Export the route into a route.csv file
+    export(G, routeTC)
+
+    #Plo the route in red color
+    fig, ax = tc.plot.plot_graph_route(
+        G,
+        routeTC,
+        route_color="r",
+        orig_dest_size=100,
+        ax=None,
+    )

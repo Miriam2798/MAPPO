@@ -42,7 +42,7 @@ The script will also show the heatmap of the actual generated pollution map.
 
 ![Pollution Map](https://github.com/annapuig/MAPPO/blob/main/Pictures/Pollutionmap.PNG)
 
-## 2. Transform map
+## 2. Transform map (Deprecated, DO NOT USE) 
 ### Installation
 In order to use the pollution maps generator you must import the modules required using the following command line:
 ```

@@ -51,7 +51,7 @@ def main():
         "Please specify the number of points generated (100 to 10000) default=1000: \n"
     )
     resolution = input(
-        "Please specify the resolution (250 to 500) default=500: \n")
+        "Please specify the resolution (250 to 500) default=100: \n")
     nn = input(
         "Please, specify the Nearest Neighbour parameter (default=16): \n")
 
