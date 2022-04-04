@@ -4,8 +4,10 @@ import osmnx as ox
 import networkx as nx
 import numpy as np
 import math
+import fastestpath as fp
 
 
+#Defines a Point object with its own atributes Point(float y, float x, float PollutionValue)
 class Point:
 
     def __init__(self, y, x, value):
@@ -13,9 +15,11 @@ class Point:
         self.x = x
         self.value = value
 
+    #ToString function
     def __repr__(self):
         return f"[{self.y}, {self.x}, {self.value}]"
 
+    #Getters
     def getY(self):
         return self.y
 
@@ -26,8 +30,15 @@ class Point:
         return self.value
 
 
-city = "Terrassa"
-G = ox.graph_from_place(city, network_type='drive')
+city = input("Which city do you want to use? (Example: Barcelona) \n")
+origin_yx = input("Origin point: \n")
+destination_yx = input("Destination point: \n")
+if (city == ""):
+    city = "Terrassa"
+if origin_yx == "" and destination_yx == "":
+    origin_yx = (41.56538214481594, 2.010169694600521)
+    destination_yx = (41.56312304751537, 2.0302406158505706)
+G = fp.importFile(city)
 Gnx = nx.relabel.convert_node_labels_to_integers(G)
 nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 
@@ -58,7 +69,7 @@ points = []
 y = min(nodes['y'])
 x = max(nodes['x'])
 
-# Completely wrong lmao
+#Iteration that gives geolocation values to every value in the pollution matrix. Objects Point(y,x,value) are stored into a points list
 for row in range(len(pollutionMatrix)):
     for col in range(len(pollutionMatrix[row])):
         points.append(
@@ -101,9 +112,16 @@ for node in range(len(nodes)):
         print(nodes['Pollution'][node])
 
 G2 = ox.graph_from_gdfs(nodes, edges)
-origin_node = ox.get_nearest_node(G2, (41.56538214481594, 2.010169694600521))
-destination_node = ox.get_nearest_node(G2,
-                                       (41.56312304751537, 2.0302406158505706))
+
+# Terrassa coordinates
+#destination_node = ox.get_nearest_node(G2,
+#origin_node = ox.get_nearest_node(G2, (41.56538214481594, 2.010169694600521))
+#                                       (41.56312304751537, 2.0302406158505706))
+
+# Barcelona Coordinates
+origin_node = ox.get_nearest_node(G2, (origin_yx))
+destination_node = ox.get_nearest_node(G2, (destination_yx))
+
 route = nx.shortest_path(G=G2,
                          source=origin_node,
                          target=destination_node,
