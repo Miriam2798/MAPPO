@@ -9,6 +9,9 @@ import math
 import fastestpath as fp
 import warnings
 import multiprocessing
+import pandas as pd
+import folium
+from folium.plugins import HeatMap
 
 #Remove warnings
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
@@ -52,16 +55,12 @@ Gnx = nx.relabel.convert_node_labels_to_integers(G)
 nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 
 nodes['Pollution'] = float(0)
-edges['Pollution'] = float(0)
-
-for edge in range(len(edges)):
-    edges['key']=edge
 
 pollutionMatrix = np.loadtxt(open("map.csv", "rb"), delimiter=",", skiprows=1)
 rows = float(round(max(nodes['y']) - min(nodes['y']), 4))
 cols = float(round(max(nodes['x']) - min(nodes['x']), 4))
 
-reso = 10
+reso = 100
 incrow = round(rows / reso, 4)
 incol = round(cols / reso, 4)
 
@@ -91,6 +90,16 @@ for row in range(len(pollutionMatrix)):
         break
     else:
         y = y - incrow
+lat = []
+lon = []
+val = []
+for p in range(len(points)):
+    lat.append(points[p].getY())
+    lon.append(points[p].getX())
+    val.append(points[p].getValue())
+d = {'lat': lat, 'lon': lon, 'value': val}
+df = pd.DataFrame(d)
+df.to_csv('points.csv')
 
 
 #print(points)
@@ -111,7 +120,7 @@ def set_values_to_edges(points):
                   " has a value of " + str(points[p].getValue()) +
                   " and the nearest point is " + str(point) +
                   " at a distance of " + str(edist) + "\n")
-            edges['Pollution'][a] = 1 - points[p].getValue()
+            G[u][v][0]['Pollution'] = 1 - points[p].getValue()
     return edges
 
 
@@ -132,6 +141,27 @@ def set_values_to_nodes(points):
                   str(point) + " at a distance of " + str(dist))
             nodes['Pollution'][selectedNode] = 1 - points[p].getValue()
     return nodes
+
+
+def mapFolium(G2, route):
+    d = pd.read_csv('points.csv')
+    df = pd.DataFrame(d)
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+
+    route_map = ox.plot_route_folium(G2, route)
+    HeatMap(df,
+            radius=20,
+            max_zoom=10,
+            gradient={
+                0.1: 'blue',
+                0.2: 'lime',
+                0.4: 'yellow',
+                0.5: 'orange',
+                0.7: 'red'
+            }).add_to(route_map)
+
+    filepath = 'route.html'
+    route_map.save(filepath)
 
 
 # value = 0
@@ -159,10 +189,9 @@ def set_values_to_nodes(points):
 # for node in range(len(nodes)):
 #     if nodes['Pollution'][node] > 0:
 #         print(nodes['Pollution'][node])
-edges=set_values_to_edges(points)
-print(edges)
-G2 = ox.graph_from_gdfs(set_values_to_nodes(points),
-                        edges)
+nodes = set_values_to_nodes(points)
+G2 = ox.graph_from_gdfs(nodes, edges)
+edges = set_values_to_edges(points)
 #G2 = ox.graph_from_gdfs(set_values_to_nodes(points), edges)
 
 # Terrassa coordinates
@@ -176,9 +205,7 @@ route = nx.shortest_path(G=G2,
                          source=origin_node,
                          target=destination_node,
                          weight='Pollution')
-route_map=ox.plot_route_folium(G, route)
-filepath = 'route.html'
-route_map.save(filepath)
+mapFolium(G2, route)
 fig, ax = ox.plot_graph_route(
     G2,
     route,
