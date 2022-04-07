@@ -31,9 +31,8 @@ def bubble_sort(punctuations, users):
     
     return punctuations, users, rank_pos
 
+#probes
 punts = [1,2,3,10,2000,50]
 usuaris = ['manuel', 'fulanito', 'menganito', 'carles', 'xavi', 'mireia']
-
 punts = bubble_sort(punts, usuaris)
-
 print(punts)
