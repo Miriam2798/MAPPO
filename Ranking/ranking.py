@@ -13,13 +13,13 @@
 
 def bubble_sort(punctuations, users):
     has_swapped = True
+    rank_pos = []
 
     num_of_iterations = 0
-
     while(has_swapped):
         has_swapped = False
         for i in range(len(punctuations) - num_of_iterations - 1):
-            if punctuations[i] > punctuations[i+1]:
+            if punctuations[i] < punctuations[i+1]:
                 # Swap
                 punctuations[i], punctuations[i+1] = punctuations[i+1], punctuations[i]
                 users[i], users[i+1] = users[i+1], users[i]
@@ -27,5 +27,13 @@ def bubble_sort(punctuations, users):
         num_of_iterations += 1
     
     for j in range(len(punctuations)):
-        pos[j] = j
+        rank_pos.append(j+1)
+    
+    return punctuations, users, rank_pos
 
+punts = [1,2,3,10,2000,50]
+usuaris = ['manuel', 'fulanito', 'menganito', 'carles', 'xavi', 'mireia']
+
+punts = bubble_sort(punts, usuaris)
+
+print(punts)
