@@ -42,7 +42,7 @@ def score(vehicle, route, score, km): #iterable i start
 
     return score
 #pruebas
-score0 = score(5,"W",50) 
+score0 = score(5,"W",50,1) 
 print('score: ')
 print(score0)
 
