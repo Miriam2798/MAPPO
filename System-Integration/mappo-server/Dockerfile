@@ -9,6 +9,7 @@ COPY . /opt/webapp/
 
 #ADD ./webapp/requirements.txt /tmp/requirements.txt
 
+#RUN apt install python3-dev libpq-dev
 
 RUN pip3 install -r requirements.txt
 

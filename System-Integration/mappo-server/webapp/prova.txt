@@ -1,1 +1,0 @@
-MultiDiGraph with 8766 nodes and 16405 edges
