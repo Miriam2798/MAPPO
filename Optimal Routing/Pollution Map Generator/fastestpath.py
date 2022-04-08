@@ -64,6 +64,7 @@ def export(G, routeTC):
         writer = csv.writer(output, lineterminator='\n')
         for val in nodelist:
             writer.writerow([val])
+    return nodelist[0]
 
 
 def main():
@@ -87,7 +88,7 @@ def main():
     routeTC, G, route = fastest_route(originx, originy, destinationx,
                                       destinationy, place)
     #Export the route into a route.csv file
-    export(G, routeTC)
+    print(export(G, routeTC))
 
     #Plo the route in red color
     fig, ax = tc.plot.plot_graph_route(
@@ -97,3 +98,9 @@ def main():
         orig_dest_size=100,
         ax=None,
     )
+
+
+def server(originx, originy, destinationx, destinationy, place):
+    routeTC, G, route = fastest_route(originx, originy, destinationx,
+                                      destinationy, place)
+    return export(G, routeTC)
