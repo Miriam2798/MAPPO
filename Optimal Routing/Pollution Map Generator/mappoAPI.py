@@ -282,12 +282,17 @@ def mapFolium(G2, route, filepath):
     route_map.save(filepath)
 
 
+#Less Polluted route function
 def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
                       increment):
     if os.path.exists('points.csv'):
         d = pd.read_csv('points.csv')
         df = pd.DataFrame(d)
+        #TO-DO
+
         #Requires a loop that assign the points data into the nodes and edges list, creating pollution attribute
+
+        #END
     else:
         print("\nFirst time running the script. Mapping the data...\n")
         points = dataMapping(origin_yx, destination_yx, city, reso, increment)
@@ -324,3 +329,4 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         orig_dest_size=100,
         ax=None,
     )
+    return export(G2, routeTC)
