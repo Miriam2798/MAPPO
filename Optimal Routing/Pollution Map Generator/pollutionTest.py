@@ -7,8 +7,6 @@ import networkx as nx
 import numpy as np
 import math
 import fastestpath as fp
-import warnings
-import multiprocessing
 import pandas as pd
 import folium
 from folium.plugins import HeatMap
@@ -29,7 +27,7 @@ class Point:
 
     #ToString function
     def __repr__(self):
-        return f"[{self.y}, {self.x}, {self.value}]"
+        return f"[{self.y}, {self.x}, {self.value},{self.node},{self.edge}]"
 
     #Getters
     def getY(self):
@@ -40,6 +38,19 @@ class Point:
 
     def getValue(self):
         return self.value
+
+    def getNode(self):
+        return self.node
+
+    def getEdge(self):
+        return self.edge
+
+    #Setters
+    def setNode(self, node):
+        self.node = node
+
+    def setEdge(self, edge):
+        self.edge = edge
 
 
 city = input("Which city do you want to use? (Example: Barcelona) \n")
@@ -60,7 +71,7 @@ pollutionMatrix = np.loadtxt(open("map.csv", "rb"), delimiter=",", skiprows=1)
 rows = float(round(max(nodes['y']) - min(nodes['y']), 4))
 cols = float(round(max(nodes['x']) - min(nodes['x']), 4))
 
-reso = 100
+reso = 10
 incrow = round(rows / reso, 4)
 incol = round(cols / reso, 4)
 
@@ -90,16 +101,6 @@ for row in range(len(pollutionMatrix)):
         break
     else:
         y = y - incrow
-lat = []
-lon = []
-val = []
-for p in range(len(points)):
-    lat.append(points[p].getY())
-    lon.append(points[p].getX())
-    val.append(points[p].getValue())
-d = {'lat': lat, 'lon': lon, 'value': val}
-df = pd.DataFrame(d)
-df.to_csv('points.csv')
 
 
 #print(points)
@@ -121,6 +122,7 @@ def set_values_to_edges(points):
                   " and the nearest point is " + str(point) +
                   " at a distance of " + str(edist) + "\n")
             G[u][v][0]['Pollution'] = 1 - points[p].getValue()
+        points[p].setEdge((u, v))
     return edges
 
 
@@ -140,6 +142,7 @@ def set_values_to_nodes(points):
                   str(points[p].getValue()) + " and the nearest point is " +
                   str(point) + " at a distance of " + str(dist))
             nodes['Pollution'][selectedNode] = 1 - points[p].getValue()
+        points[p].setNode(selectedNode)
     return nodes
 
 
@@ -147,6 +150,8 @@ def mapFolium(G2, route):
     d = pd.read_csv('points.csv')
     df = pd.DataFrame(d)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+    df = df.loc[:, ~df.columns.str.contains('node')]
+    df = df.loc[:, ~df.columns.str.contains('edge')]
 
     route_map = ox.plot_route_folium(G2, route)
     HeatMap(df,
@@ -192,6 +197,22 @@ def mapFolium(G2, route):
 nodes = set_values_to_nodes(points)
 G2 = ox.graph_from_gdfs(nodes, edges)
 edges = set_values_to_edges(points)
+
+lat = []
+lon = []
+val = []
+node = []
+edge = []
+for p in range(len(points)):
+    lat.append(points[p].getY())
+    lon.append(points[p].getX())
+    val.append(points[p].getValue())
+    node.append(points[p].getNode())
+    edge.append(points[p].getEdge())
+d = {'lat': lat, 'lon': lon, 'value': val, 'node': node, 'edge': edge}
+df = pd.DataFrame(d)
+df.to_csv('points.csv')
+
 #G2 = ox.graph_from_gdfs(set_values_to_nodes(points), edges)
 
 # Terrassa coordinates
