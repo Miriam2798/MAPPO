@@ -198,7 +198,7 @@ class Point:
 
 
 def dataMapping(origin_yx, destination_yx, city, reso, increment):
-    G = fp.importFile(city)
+    G = importFile(city)
     Gnx = nx.relabel.convert_node_labels_to_integers(G)
     nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
     nodes['Pollution'] = float(0)
@@ -228,7 +228,7 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment):
 
 
 #Set Pollution values to edges
-def set_values_to_edges(points):
+def set_values_to_edges(points, edges, G):
     edist = 0
     first = True
     for p in range(len(points)):
@@ -251,7 +251,7 @@ def set_values_to_edges(points):
 
 
 #Set pollution values to nodes
-def set_values_to_nodes(points):
+def set_values_to_nodes(points, nodes, Gnx):
     pdist = 0
     first = True
     for p in range(len(points)):
@@ -357,4 +357,4 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         orig_dest_size=100,
         ax=None,
     )
-    return export(G2, routeTC)
+    return export(G2, route)
