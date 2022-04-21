@@ -159,7 +159,7 @@ class Point:
 
     #ToString function
     def __repr__(self):
-        return f"[{self.y}, {self.x}, {self.value},{self.node},{self.edge}]"
+        return f"[{self.y}, {self.x}, {self.value},{self.node},{self.edge},{self.ndist}, {self.edist}]"
 
     #Getters
     def getY(self):
@@ -177,12 +177,24 @@ class Point:
     def getEdge(self):
         return self.edge
 
+    def getNdist(self):
+        return self.ndist
+
+    def getEdist(self):
+        return self.edist
+
     #Setters
     def setNode(self, node):
         self.node = node
 
     def setEdge(self, edge):
         self.edge = edge
+
+    def setNdist(self, ndist):
+        self.ndist = ndist
+
+    def setEdist(self, edist):
+        self.edist = edist
 
 
 def dataMapping(origin_yx, destination_yx, city, reso, increment):
@@ -234,6 +246,7 @@ def set_values_to_edges(points):
                   " at a distance of " + str(edist) + "\n")
             G[u][v][0]['Pollution'] = 1 - points[p].getValue()
         points[p].setEdge((u, v))
+        points[p].setEdist(edist)
     return edges
 
 
@@ -255,6 +268,7 @@ def set_values_to_nodes(points):
                   str(point) + " at a distance of " + str(dist))
             nodes['Pollution'][selectedNode] = 1 - points[p].getValue()
         points[p].setNode(selectedNode)
+        points[p].setNdist(dist)
     return nodes
 
 
@@ -265,6 +279,8 @@ def mapFolium(G2, route, filepath):
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df.loc[:, ~df.columns.str.contains('node')]
     df = df.loc[:, ~df.columns.str.contains('edge')]
+    df = df.loc[:, ~df.columns.str.contains('ndist')]
+    df = df.loc[:, ~df.columns.str.contains('edist')]
 
     route_map = ox.plot_route_folium(G2, route)
     HeatMap(df,
@@ -304,13 +320,25 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         val = []
         node = []
         edge = []
+        ndist = []
+        edist = []
         for p in range(len(points)):
             lat.append(points[p].getY())
             lon.append(points[p].getX())
             val.append(points[p].getValue())
             node.append(points[p].getNode())
             edge.append(points[p].getEdge())
-        d = {'lat': lat, 'lon': lon, 'value': val, 'node': node, 'edge': edge}
+            ndist.append(points[p].getNdist())
+            edist.append(points[p].getEdist())
+        d = {
+            'lat': lat,
+            'lon': lon,
+            'value': val,
+            'node': node,
+            'edge': edge,
+            'ndist': ndist,
+            'edist': edist
+        }
         df = pd.DataFrame(d)
         df.to_csv('points.csv')
     origin_yx = tuple(originx, originy)
