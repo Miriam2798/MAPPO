@@ -235,17 +235,17 @@ def set_values_to_edges(points, edges, G):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        u, v, a, edist = ox.get_nearest_edge(G, point, return_dist=True)
+        ne, edist = ox.distance.nearest_edges(G, x, y, return_dist=True)
         if first:
             epdist = edist
             first = False
         if edist <= epdist:
-            print("Edge " + str(u) + " " + str(v) + " " + str(a) +
+            print("Edge " + str(ne[0]) + " " + str(ne[1]) + " " + str(ne[2]) +
                   " has a value of " + str(points[p].getValue()) +
                   " and the nearest point is " + str(point) +
                   " at a distance of " + str(edist) + "\n")
-            G[u][v][0]['Pollution'] = 1 - points[p].getValue()
-        points[p].setEdge((u, v))
+            G[ne[0]][ne[1]][0]['Pollution'] = 1 - points[p].getValue()
+        points[p].setEdge((ne[0], ne[1]))
         points[p].setEdist(edist)
     return edges
 
@@ -258,7 +258,10 @@ def set_values_to_nodes(points, nodes, Gnx):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        selectedNode, dist = ox.get_nearest_node(Gnx, point, return_dist=True)
+        selectedNode, dist = ox.distance.nearest_nodes(Gnx,
+                                                       x,
+                                                       y,
+                                                       return_dist=True)
         if first:
             pdist = dist
             first = False
@@ -300,7 +303,7 @@ def mapFolium(G2, route, filepath):
 
 #Less Polluted route function
 def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
-                      increment):
+                      increment, nodes, edges):
     if os.path.exists('points.csv'):
         d = pd.read_csv('points.csv')
         df = pd.DataFrame(d)
@@ -309,6 +312,26 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         #Requires a loop that assign the points data into the nodes and edges list, creating pollution attribute
 
         #END
+
+        #nodes
+        df = df.sort_values(by=['ndist'])
+        df = df.drop_duplicates(keep='first', subset='node')
+        nodes['Pollution'] = float(0)
+        for ind in df.index:
+            nodes['Pollution'][int(df['node'][ind])] = 1 - df['value'][ind]
+
+        #edges
+        df = df.sort_values(by=['edist'])
+        df = df.drop_duplicates(keep='first', subset='edge')
+        for ind in df.index:
+            id = df['edge'][ind].split(",")
+            id[0] = int(id[0].replace("(", ""))
+            id[1] = int(id[1].replace(")", ""))
+            G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
+            print(id, ind, G[id[0]][id[1]][0]['Pollution'])
+        Gnx = nx.relabel.convert_node_labels_to_integers(G)
+        ripnodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
+        G2 = ox.graph_from_gdfs(nodes, edges)
     else:
         print("\nFirst time running the script. Mapping the data...\n")
         points = dataMapping(origin_yx, destination_yx, city, reso, increment)
