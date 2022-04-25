@@ -2,8 +2,10 @@
 import osmnx as ox
 import networkx as nx
 import pandas as pd
+import mappoAPI as api
 
 G = ox.graph_from_place("Terrassa")
+#%%
 Gnx = nx.relabel.convert_node_labels_to_integers(G)
 nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 #%%
@@ -40,11 +42,29 @@ for ind in df.index:
         else:
             pedge = df['edge'][ind]
 
-d = {
-    'node': node,
-    'ndistance': ndistance
-}
+d = {'node': node, 'ndistance': ndistance, 'pollution': node}
 df = pd.DataFrame(d)
-
+#%%
 for ind in df.index:
-    df['ndist'][ind].max
+    df['ndistance'][ind]
+#%%
+df = df.sort_values(by=['ndist'])
+df = df.drop_duplicates(keep='first', subset='node')
+nodes['Pollution'] = float(0)
+for ind in df.index:
+    nodes['Pollution'][int(df['node'][ind])] = 1 - df['value'][ind]
+    print(nodes['Pollution'][int(df['node'][ind])])
+#print(nodes)
+dfa = pd.DataFrame(nodes.drop(columns='geometry'))
+#%%
+df = df.sort_values(by=['edist'])
+df = df.drop_duplicates(keep='first', subset='edge')
+for ind in df.index:
+    id = df['edge'][ind].split(",")
+    id[0] = int(id[0].replace("(", ""))
+    id[1] = int(id[1].replace(")", ""))
+    G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
+    print(id,ind,G[id[0]][id[1]][0]['Pollution'])
+dfb = pd.DataFrame(G.drop(columns='geometry'))
+#%%
+print(G[1126668145][282873806])
