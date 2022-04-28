@@ -64,7 +64,21 @@ for ind in df.index:
     id[0] = int(id[0].replace("(", ""))
     id[1] = int(id[1].replace(")", ""))
     G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
-    print(id,ind,G[id[0]][id[1]][0]['Pollution'])
+    print(id, ind, G[id[0]][id[1]][0]['Pollution'])
 dfb = pd.DataFrame(G.drop(columns='geometry'))
 #%%
-print(G[1126668145][282873806])
+import taxicab as tc
+originx = 2.010169694600521
+originy = 41.56538214481594
+destinationx = 2.0302406158505706
+destinationy = 41.56312304751537
+
+origin_node = ox.get_nearest_node(G, tuple((originy, originx)))
+destination_node = ox.get_nearest_node(G, tuple((destinationy, destinationx)))
+#Finds the shortest path and stores it into the route object. Using length argument to find the shortest path in terms of length
+route = nx.shortest_path(G=G,
+                         source=origin_node,
+                         target=destination_node,
+                         weight='length')
+routeTC = tc.distance.shortest_path(G,tuple((originy, originx)), tuple((destinationy, destinationx)))
+print(route,routeTC)
