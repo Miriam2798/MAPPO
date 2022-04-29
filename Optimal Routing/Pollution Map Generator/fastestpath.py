@@ -90,7 +90,7 @@ def main():
     #Export the route into a route.csv file
     print(export(G, routeTC))
 
-    #Plo the route in red color
+    #Plot the route in red color
     fig, ax = tc.plot.plot_graph_route(
         G,
         routeTC,
