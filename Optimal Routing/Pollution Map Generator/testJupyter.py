@@ -5,11 +5,16 @@ import pandas as pd
 import mappoAPI as api
 
 G = ox.graph_from_place("Terrassa")
-#%%
 Gnx = nx.relabel.convert_node_labels_to_integers(G)
-nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 #%%
-d = pd.read_csv('points.csv')
+nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+print(nodes)
+nodes['Pollution']=0
+#%%
+# Gnx = nx.relabel.convert_node_labels_to_integers(G)
+nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+#%%
+d = pd.read_csv('points_Vilafranca del Penedes.csv')
 df = pd.DataFrame(d)
 df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 df = df.sort_values(by=['node'])
@@ -54,7 +59,7 @@ nodes['Pollution'] = float(0)
 for ind in df.index:
     nodes['Pollution'][int(df['node'][ind])] = 1 - df['value'][ind]
     print(nodes['Pollution'][int(df['node'][ind])])
-#print(nodes)
+print(nodes)
 dfa = pd.DataFrame(nodes.drop(columns='geometry'))
 #%%
 df = df.sort_values(by=['edist'])
@@ -82,3 +87,18 @@ route = nx.shortest_path(G=G,
                          weight='length')
 routeTC = tc.distance.shortest_path(G,tuple((originy, originx)), tuple((destinationy, destinationx)))
 print(route,routeTC)
+#%%
+d = pd.read_csv('points_Vilafranca del Penedes2.csv')
+df = pd.DataFrame(d)
+#nodes
+df = df.sort_values(by=['ndist'])
+df = df.drop_duplicates(keep='first', subset='node')
+nodes['Pollution'] = float(0)
+for ind in df.index:
+    nodes['Pollution'][int(df['node'][ind])] = 1 - df['value'][ind]
+a= pd.DataFrame(nodes)
+df1 = pd.DataFrame(nodes.drop(columns='geometry'))
+
+for source,target in G.edges():
+    G[source][target][0]['Pollution']=(nodes['Pollution'][source]+nodes['Pollution'][target])/2
+#G.edges(data=True)
