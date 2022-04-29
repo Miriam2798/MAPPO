@@ -10,6 +10,7 @@ import fastestpath as fp
 import pandas as pd
 import folium
 from folium.plugins import HeatMap
+import time
 
 #Remove warnings
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
@@ -116,37 +117,39 @@ for row in range(len(pollutionMatrix)):
 
 
 #print(points)
-def set_values_to_edges(points):
+def set_values_to_edges(points, edges, G):
     edist = 0
     first = True
     for p in range(len(points)):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        #selectedEdge, edist = ox.nearest_edges(G, x, y, return_dist=True)
-        u, v, a, edist = ox.get_nearest_edge(G, point, return_dist=True)
+        ne, edist = ox.distance.nearest_edges(G, x, y, return_dist=True)
         if first:
             epdist = edist
             first = False
         if edist <= epdist:
-            print("Edge " + str(u) + " " + str(v) + " " + str(a) +
+            print("Edge " + str(ne[0]) + " " + str(ne[1]) + " " + str(ne[2]) +
                   " has a value of " + str(points[p].getValue()) +
                   " and the nearest point is " + str(point) +
                   " at a distance of " + str(edist) + "\n")
-            G[u][v][0]['Pollution'] = 1 - points[p].getValue()
-        points[p].setEdge((u, v))
+            G[ne[0]][ne[1]][0]['Pollution'] = 1 - points[p].getValue()
+        points[p].setEdge((ne[0], ne[1]))
         points[p].setEdist(edist)
-    return edges
+    return G
 
 
-def set_values_to_nodes(points):
+def set_values_to_nodes(points, nodes, Gnx):
     pdist = 0
     first = True
     for p in range(len(points)):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        selectedNode, dist = ox.get_nearest_node(Gnx, point, return_dist=True)
+        selectedNode, dist = ox.distance.nearest_nodes(Gnx,
+                                                       x,
+                                                       y,
+                                                       return_dist=True)
         if first:
             pdist = dist
             first = False
@@ -210,9 +213,17 @@ def mapFolium(G2, route):
 # for node in range(len(nodes)):
 #     if nodes['Pollution'][node] > 0:
 #         print(nodes['Pollution'][node])
-nodes = set_values_to_nodes(points)
+tic = time.time()
+nodes = set_values_to_nodes(points, nodes, Gnx)
+toc = time.time()
+print("Node processing lasted: " + str(toc-tic))
+tic = time.time()
+G = set_values_to_edges(points, edges, G)
+toc = time.time()
+print("Edge processing lasted: " + str(toc-tic))
+Gnx = nx.relabel.convert_node_labels_to_integers(G)
+ripnodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
 G2 = ox.graph_from_gdfs(nodes, edges)
-edges = set_values_to_edges(points)
 
 lat = []
 lon = []

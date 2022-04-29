@@ -14,6 +14,7 @@ from pandas.core.common import SettingWithCopyWarning
 import pandas as pd
 import folium
 from folium.plugins import HeatMap
+import taxicab as tc
 
 
 #Remove warnings
@@ -45,7 +46,7 @@ def nearest_neighbours(xs, ys, reso, n_neighbours):
 
 
 # Export to csv file called map.csv
-def export(im):
+def exportMap(im):
     np.savetxt("map.csv", im, delimiter=",")
 
 
@@ -65,7 +66,27 @@ def pollutionMapGenerator(generated_points, resolution, nn):
     plt.imshow(im, origin='lower', extent=extent, cmap=cm.turbo)
     plt.show()
     # Export as a csv file
-    export(im)
+    exportMap(im)
+
+
+def mainPollutionMapGenerator():
+    print(
+        r"""__________      .__  .__          __  .__                   _____                 
+\______   \____ |  | |  |  __ ___/  |_|__| ____   ____     /     \ _____  ______  
+ |     ___/  _ \|  | |  | |  |  \   __\  |/  _ \ /    \   /  \ /  \\__  \ \____ \ 
+ |    |  (  <_> )  |_|  |_|  |  /|  | |  (  <_> )   |  \ /    Y    \/ __ \|  |_> >
+ |____|   \____/|____/____/____/ |__| |__|\____/|___|  / \____|__  (____  /   __/ 
+                                                     \/          \/     \/|__|"""
+    )
+    time.sleep(1)
+    generated_points = input(
+        "Please specify the number of points generated (100 to 10000) default=1000: \n"
+    )
+    resolution = input(
+        "Please specify the resolution (250 to 500) default=100: \n")
+    nn = input(
+        "Please, specify the Nearest Neighbour parameter (default=16): \n")
+    return generated_points, resolution, nn
 
 
 #Fastest Route Computing
@@ -95,8 +116,30 @@ def importFile(place):
     return G
 
 
+def mainFastestRoute():
+    print(
+        r"""___________                __                   __    __________         __  .__     
+\_   _____/____    _______/  |_  ____   _______/  |_  \______   \_____ _/  |_|  |__  
+ |    __) \__  \  /  ___/\   __\/ __ \ /  ___/\   __\  |     ___/\__  \\   __\  |  \ 
+ |     \   / __ \_\___ \  |  | \  ___/ \___ \  |  |    |    |     / __ \|  | |   Y  \
+ \___  /  (____  /____  > |__|  \___  >____  > |__|    |____|    (____  /__| |___|  /
+     \/        \/     \/            \/     \/                         \/          \/"""
+    )
+    time.sleep(1)
+    place = input("Please, insert the place name: (example: Barcelona) \n")
+    originx, originy = input(
+        "Please, insert the origin coordinates: (example: 41.59047, 2.45235) \n"
+    ).split(", ")
+    destinationx, destinationy = input(
+        "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
+    ).split(", ")
+    return place, tuple((originx, originy)), tuple(
+        (destinationx, destinationy))
+
+
 # Calculates the fastest route of a place
 def fastest_route(originx, originy, destinationx, destinationy, place):
+    removeWarnings()
     #Imports the graph
     G = importFile(place)
     #Generates tuples from the given coordinates
@@ -112,11 +155,34 @@ def fastest_route(originx, originy, destinationx, destinationy, place):
                              weight='length')
     #Using Taxicab library to normalize the start and end of the route, as it won't always start in a node location
     routeTC = tc.distance.shortest_path(G, origin_xy, destination_xy)
-    return routeTC, G, route
+    filename = "fastestroute.csv"
+    fig, ax = tc.plot.plot_graph_route(
+        G,
+        routeTC,
+        route_color="r",
+        orig_dest_size=100,
+        ax=None,
+    )
+    return export(G, route, filename)
 
 
 #Exports the route into a route.csv file
-def export(G, routeTC):
+def export(G, routeTC, filename):
+    nodelist = []
+    #Iterate the nodes to extrat all the coordinates along with its ids
+    for i in range(int(len(routeTC))):
+        y = G.nodes[routeTC[i]]['y']
+        x = G.nodes[routeTC[i]]['x']
+        nodelist.append(Node(y, x, routeTC[i]))
+    #Create and write the node stored into nodelist to a route.csv file
+    with open(filename, "w") as output:
+        writer = csv.writer(output, lineterminator='\n')
+        for val in nodelist:
+            writer.writerow([val])
+    return nodelist[0]
+
+
+def exportTC(G, routeTC, filename):
     nodelist = []
     #Iterate the nodes to extrat all the coordinates along with its ids
     for i in range(int(len(routeTC[1]))):
@@ -124,7 +190,7 @@ def export(G, routeTC):
         x = G.nodes[routeTC[1][i]]['x']
         nodelist.append(Node(y, x, routeTC[1][i]))
     #Create and write the node stored into nodelist to a route.csv file
-    with open("route.csv", "w") as output:
+    with open(filename, "w") as output:
         writer = csv.writer(output, lineterminator='\n')
         for val in nodelist:
             writer.writerow([val])
@@ -145,7 +211,8 @@ def fastestRoute(place, originx, originy, destinationx, destinationy):
         orig_dest_size=100,
         ax=None,
     )
-    return export(G, routeTC)
+    filename = "fastestroute.csv"
+    return exportTC(G, routeTC, filename)
 
 
 #Less Polluted Route
@@ -198,6 +265,7 @@ class Point:
 
 
 def dataMapping(origin_yx, destination_yx, city, reso, increment):
+    removeWarnings()
     G = importFile(city)
     Gnx = nx.relabel.convert_node_labels_to_integers(G)
     nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
@@ -235,17 +303,17 @@ def set_values_to_edges(points, edges, G):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        u, v, a, edist = ox.get_nearest_edge(G, point, return_dist=True)
+        ne, edist = ox.distance.nearest_edges(G, x, y, return_dist=True)
         if first:
             epdist = edist
             first = False
         if edist <= epdist:
-            print("Edge " + str(u) + " " + str(v) + " " + str(a) +
+            print("Edge " + str(ne[0]) + " " + str(ne[1]) + " " + str(ne[2]) +
                   " has a value of " + str(points[p].getValue()) +
                   " and the nearest point is " + str(point) +
                   " at a distance of " + str(edist) + "\n")
-            G[u][v][0]['Pollution'] = 1 - points[p].getValue()
-        points[p].setEdge((u, v))
+            G[ne[0]][ne[1]][0]['Pollution'] = 1 - points[p].getValue()
+        points[p].setEdge((ne[0], ne[1]))
         points[p].setEdist(edist)
     return edges
 
@@ -254,11 +322,15 @@ def set_values_to_edges(points, edges, G):
 def set_values_to_nodes(points, nodes, Gnx):
     pdist = 0
     first = True
+    nodes['Pollution'] = float(0)
     for p in range(len(points)):
         y = points[p].getY()
         x = points[p].getX()
         point = tuple((y, x))
-        selectedNode, dist = ox.get_nearest_node(Gnx, point, return_dist=True)
+        selectedNode, dist = ox.distance.nearest_nodes(Gnx,
+                                                       x,
+                                                       y,
+                                                       return_dist=True)
         if first:
             pdist = dist
             first = False
@@ -273,7 +345,7 @@ def set_values_to_nodes(points, nodes, Gnx):
 
 
 #Export map as route.html using folium
-def mapFolium(G2, route, filepath):
+def mapFolium(G2, route, filepath, originyx, destinationyx):
     d = pd.read_csv('points.csv')
     df = pd.DataFrame(d)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
@@ -293,14 +365,44 @@ def mapFolium(G2, route, filepath):
                 0.5: 'orange',
                 0.7: 'red'
             }).add_to(route_map)
+    folium.Marker(location=[originyx[0], originyx[1]],
+                  popup='Origen').add_to(route_map)
+    folium.Marker(location=[destinationyx[0], destinationyx[1]],
+                  popup='Destino').add_to(route_map)
     if filepath == "":
         filepath = 'LessPollutedRoute.html'
     route_map.save(filepath)
 
 
+def mainLessPollutedRoute():
+    print(
+        r""".____                          __________      .__  .__          __             .___ __________               __          
+|    |    ____   ______ ______ \______   \____ |  | |  |  __ ___/  |_  ____   __| _/ \______   \ ____  __ ___/  |_  ____  
+|    |  _/ __ \ /  ___//  ___/  |     ___/  _ \|  | |  | |  |  \   __\/ __ \ / __ |   |       _//  _ \|  |  \   __\/ __ \ 
+|    |__\  ___/ \___ \ \___ \   |    |  (  <_> )  |_|  |_|  |  /|  | \  ___// /_/ |   |    |   (  <_> )  |  /|  | \  ___/ 
+|_______ \___  >____  >____  >  |____|   \____/|____/____/____/ |__|  \___  >____ |   |____|_  /\____/|____/ |__|  \___  >
+        \/   \/     \/     \/                                             \/     \/          \/                        \/ """
+    )
+    time.sleep(1)
+    city = input("Please, insert the place name: (example: Barcelona) \n")
+    originy, originx = input(
+        "Please, insert the origin coordinates: (example: 41.59047, 2.45235) \n"
+    ).split(", ")
+    destinationy, destinationx = input(
+        "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
+    ).split(", ")
+    G = importFile(city)
+    Gnx = nx.relabel.convert_node_labels_to_integers(G)
+    nodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
+    return city, tuple((originy, originx)), tuple(
+        (destinationy, destinationx)), nodes, edges, G
+
+
 #Less Polluted route function
 def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
-                      increment):
+                      increment, nodes, edges, G):
+    removeWarnings()
+    Gnx = nx.relabel.convert_node_labels_to_integers(G)
     if os.path.exists('points.csv'):
         d = pd.read_csv('points.csv')
         df = pd.DataFrame(d)
@@ -309,11 +411,36 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         #Requires a loop that assign the points data into the nodes and edges list, creating pollution attribute
 
         #END
+
+        #nodes
+        df = df.sort_values(by=['ndist'])
+        df = df.drop_duplicates(keep='first', subset='node')
+        nodes['Pollution'] = float(0)
+        for ind in df.index:
+            nodes['Pollution'][int(df['node'][ind])] = 1 - df['value'][ind]
+
+        #edges
+        df = df.sort_values(by=['edist'])
+        df = df.drop_duplicates(keep='first', subset='edge')
+        for ind in df.index:
+            id = df['edge'][ind].split(",")
+            id[0] = int(id[0].replace("(", ""))
+            id[1] = int(id[1].replace(")", ""))
+            G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
+        ripnodes, edges = ox.graph_to_gdfs(Gnx, nodes=True, edges=True)
+        G2 = ox.graph_from_gdfs(nodes, edges)
     else:
+        origin_yx = tuple((originy, originx))
+        destination_yx = tuple((destinationy, destinationx))
         print("\nFirst time running the script. Mapping the data...\n")
         points = dataMapping(origin_yx, destination_yx, city, reso, increment)
-        nodes = set_values_to_nodes(points)
-        edges = set_values_to_edges(points)
+        tic = time.time()
+        nodes = set_values_to_nodes(points, nodes, Gnx)
+        toc = time.time()
+        print("Node processing lasted: " + str(toc - tic))
+        tic = time.time()
+        G = set_values_to_edges(points, edges, G)
+        toc = time.time()
         G2 = ox.graph_from_gdfs(nodes, edges)
         lat = []
         lon = []
@@ -341,15 +468,17 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         }
         df = pd.DataFrame(d)
         df.to_csv('points.csv')
-    origin_yx = tuple(originx, originy)
-    destination_yx = tuple(destinationx, destinationy)
-    origin_node = ox.get_nearest_node(G2, (origin_yx))
-    destination_node = ox.get_nearest_node(G2, (destination_yx))
+    origin_yx = tuple((float(originy), float(originx)))
+    destination_yx = tuple((float(destinationy), float(destinationx)))
+    origin_node = ox.get_nearest_node(G2, origin_yx)
+    destination_node = ox.get_nearest_node(G2, destination_yx)
     route = nx.shortest_path(G=G2,
                              source=origin_node,
                              target=destination_node,
                              weight='Pollution')
-    mapFolium(G2, route)
+    #routeTC = tc.distance.shortest_path(G, origin_yx, destination_yx)
+    filepath = 'route.html'
+    mapFolium(G2, route, filepath, origin_yx, destination_yx)
     fig, ax = ox.plot_graph_route(
         G2,
         route,
@@ -357,4 +486,5 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         orig_dest_size=100,
         ax=None,
     )
-    return export(G2, route)
+    filename = "lesspollutedroute.csv"
+    return export(G2, route, filename)
