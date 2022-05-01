@@ -44,7 +44,7 @@ while True:
         city, origin_yx, destination_yx, nodes, edges, G = api.mainLessPollutedRoute(
         )
         api.LessPollutedRoute(origin_yx[1], origin_yx[0], destination_yx[1],
-                              destination_yx[0], city, 10, 4, nodes, edges, G)
+                              destination_yx[0], city, 100, 4, nodes, edges, G)
     elif choice == "5":
         loop = False
         os.system('cls' if os.name == 'nt' else 'clear')
