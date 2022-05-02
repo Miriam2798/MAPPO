@@ -349,7 +349,8 @@ def set_values_to_nodes(points, nodes, G):
 
 
 #Export map as route.html using folium
-def mapFolium(G2, route, filepath, originyx, destinationyx, city):
+def mapFolium(G2, route, fastroute, 
+              filepath, originyx, destinationyx, city):
     d = pd.read_csv('points_' + city + '.csv')
     df = pd.DataFrame(d)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
@@ -358,16 +359,17 @@ def mapFolium(G2, route, filepath, originyx, destinationyx, city):
     df = df.loc[:, ~df.columns.str.contains('ndist')]
     df = df.loc[:, ~df.columns.str.contains('edist')]
 
-    route_map = ox.plot_route_folium(G2, route)
+    route_map = ox.plot_route_folium(G2, route, route_color='#32CD32')
+    route_map = ox.plot_route_folium(G2, fastroute, route_map=route_map, route_color='#ff0000')
     HeatMap(df,
             radius=10,
             max_zoom=10,
             gradient={
                 0.05: 'blue',
                 0.1: 'lime',
-                0.3: 'yellow',
-                0.4: 'orange',
-                0.6: 'red'
+                0.25: 'yellow',
+                0.3: 'orange',
+                0.4: 'red'
             }).add_to(route_map)
     folium.Marker(location=[originyx[0], originyx[1]],
                   popup='Origen').add_to(route_map)
@@ -425,7 +427,8 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
             id[0] = int(id[0].replace("(", ""))
             id[1] = int(id[1].replace(")", ""))
             G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
-        ripnodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True) # G is not used :(
+        ripnodes, edges = ox.graph_to_gdfs(G, nodes=True,
+                                           edges=True)
         G2 = ox.graph_from_gdfs(nodes, edges)
     else:
         origin_yx = tuple((originy, originx))
@@ -492,7 +495,7 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
                                  weight='length')
     #routeTC = tc.distance.shortest_path(G, origin_yx, destination_yx)
     filepath = 'route.html'
-    mapFolium(G2, route, filepath, origin_yx, destination_yx, city)
+    mapFolium(G2, route, fastroute, filepath, origin_yx, destination_yx, city)
     rc = ['r', 'g']
     fig, ax = ox.plot_graph_routes(G2, [fastroute, route],
                                    route_colors=rc,
@@ -506,5 +509,5 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
     #     ax=None,
     # )
     filename = "lesspollutedroute.csv"
-    export(G2, fastroute, "fastestroute.csv")
-    return export(G2, route, filename)
+    return export(G2, route, filename), export(G2, fastroute,
+                                               "fastestroute.csv")
