@@ -46,7 +46,7 @@ while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         nodelistpolluted, nodelistfast = api.LessPollutedRoute(
             origin_yx[1], origin_yx[0], destination_yx[1], destination_yx[0],
-            city, 200, 5, nodes, edges, G)
+            city, 100, 4, nodes, edges, G)
         lesspollutedsum = 0
         fastsum = 0
         for i in range(len(nodelistpolluted)):

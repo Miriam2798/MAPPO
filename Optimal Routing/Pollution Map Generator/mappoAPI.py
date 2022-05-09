@@ -19,6 +19,7 @@ import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from shapely.geometry import shape
 import math
+import geopandas as gp
 
 
 #Remove warnings
@@ -119,7 +120,7 @@ def importFile(place):
         return ox.load_graphml(f'{place}_graph.txt')
     print("\nFirst time running the script for " + place +
           ". Loading and Saving graph...\n")
-    G = ox.graph_from_place(place, network_type='drive')
+    G = ox.graph_from_place(place, network_type='drive', simplify=True)
     ox.save_graphml(G, f"{place}_graph.txt")
     return G
 
@@ -250,45 +251,45 @@ class Point:
     def getNode(self):
         return self.node
 
-    def getEdge(self):
-        return self.edge
+    # def getEdge(self):
+    #     return self.edge
 
     def getNdist(self):
         return self.ndist
 
-    def getEdist(self):
-        return self.edist
+    # def getEdgeVal(self):
+    #     return self.edgeVal
 
     #Setters
     def setNode(self, node):
         self.node = node
 
-    def setEdge(self, edge):
-        self.edge = edge
+    # def setEdge(self, edge):
+    #     self.edge = edge
 
     def setNdist(self, ndist):
         self.ndist = ndist
 
-    def setEdist(self, edist):
-        self.edist = edist
+    # def setEdgeVal(self, edgeVal):
+    #     self.edgeVal = edgeVal
 
 
 def dataMapping(origin_yx, destination_yx, city, reso, increment):
     removeWarnings()
     G = importFile(city)
     gdf = ox.geocoder.geocode_to_gdf(city)
-    ymax = float(round(gdf['bbox_north'], increment))
-    ymin = float(round(gdf['bbox_south'], increment))
-    xmax = float(round(gdf['bbox_east'], increment))
-    xmin = float(round(gdf['bbox_west'], increment))
+    ymax = float(gdf['bbox_north'])
+    ymin = float(gdf['bbox_south'])
+    xmax = float(gdf['bbox_east'])
+    xmin = float(gdf['bbox_west'])
     # Gnx = nx.relabel.convert_node_labels_to_integers(G)
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
     nodes['Pollution'] = float(0)
     pollutionMatrix = np.loadtxt(open("map.csv", "rb"), delimiter=",")
-    rows = float(round(ymax - ymin, increment))
-    cols = float(round(xmax - xmin, increment))
-    incrow = round(rows / reso, increment)
-    incol = round(cols / reso, increment)
+    rows = float(ymax - ymin)
+    cols = float(xmax - xmin)
+    incrow = rows / reso
+    incol = cols / reso
     points = []
     y = float(round(ymax, increment))
     x = float(round(xmin, increment))
@@ -301,10 +302,40 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment):
                 Point(round(y, increment), round(x, increment),
                       pollutionMatrix[row][col]))
             x = x + incol
-        if y < round(ymin, increment) and x >= round(xmax, increment):
+        if y < round(ymin, increment) and x > round(xmax, increment):
             break
         else:
             y = y - incrow
+    values = []
+    latitudes = []
+    longitudes = []
+    for p in range(len(points)):
+        values.append(float(points[p].getValue()))
+        latitudes.append(float(points[p].getY()))
+        longitudes.append(float(points[p].getX()))
+    data = {'value': values, 'Latitude': latitudes, 'Longitude': longitudes}
+    df = pd.DataFrame(data)
+    gdf = gp.GeoDataFrame(df,
+                          geometry=gp.points_from_xy(df.Longitude,
+                                                     df.Latitude))
+    worldmap = gp.read_file(gp.datasets.get_path("naturalearth_lowres"))
+
+    # Creating axes and plotting world map
+    fig, ax = plt.subplots(figsize=(12, 6))
+    worldmap.plot(color="lightgrey", ax=ax)
+
+    # Plotting our Impact Energy data with a color map
+    x = df['Longitude']
+    y = df['Latitude']
+    z = df['value']
+    plt.scatter(x, y, s=20 * z, c=z, alpha=0.6, vmin=0, vmax=10, cmap='autumn')
+    plt.colorbar(label='Pollution Values')
+
+    # Creating axis limits and title
+    plt.title("Pollution map")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.show()
     return points
 
 
@@ -333,7 +364,7 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment):
 
 def set_values_to_edges(points, G, nodes, increment):
     for u, v, k in G.edges(keys=True):
-        if (G[u][v][k]['length'] < 200):
+        if (G[u][v][k]['length'] < 400):
             G[u][v][k]['Pollution'] = 1 - (
                 (nodes['Pollution'][u] + nodes['Pollution'][v]) / 2)
             # print("Edge " + str(G[u][v][k]) + " has a length of " +
@@ -516,7 +547,7 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
         node = []
         #edge = []
         ndist = []
-        #edist = []
+        #edgeval = []
         for p in range(len(points)):
             lat.append(points[p].getY())
             lon.append(points[p].getX())
@@ -524,7 +555,7 @@ def LessPollutedRoute(originx, originy, destinationx, destinationy, city, reso,
             node.append(points[p].getNode())
             #edge.append(points[p].getEdge())
             ndist.append(points[p].getNdist())
-            #edist.append(points[p].getEdist())
+            #edgeval.append(points[p].getEdgeVal())
         d = {
             'lat': lat,
             'lon': lon,
