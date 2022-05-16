@@ -7,7 +7,7 @@ import mappoAPI as api
 G = ox.graph_from_place("vilafranca del penedes")
 Gnx = nx.relabel.convert_node_labels_to_integers(G)
 #%%
-nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+anodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
 print(nodes)
 nodes['Pollution'] = 0
 #%%
@@ -241,8 +241,139 @@ new_dataset = rt.open(
     transform=transform,
 )
 #%%
-new_dataset.read(1)
+import osmnx as ox
+
+G = ox.graph_from_place("vilafranca del penedes")
+nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+#%%
+import pandas as pd
+import ast
+import math
+import re
+
+city = "vilafranca del penedes"
+
+d = pd.read_csv('points_' + city + '.csv')
+df = pd.DataFrame(d)
+#nodes
+df = df.sort_values(by=['ndist'])
+df = df.drop_duplicates(keep='first', subset='node')
+nodes['Pollution'] = float(0)
+for ind in df.index:
+    nodes['Pollution'][int(df['node'][ind])] = df['value'][ind]
+
+dedges = pd.read_csv('edges_' + city + '.csv')
+dfedges = pd.DataFrame(dedges)
+dfedges = dfedges.loc[:, ~dfedges.columns.str.contains('^Unnamed')]
+#%%
+#tupledge = str(tuple((312213338, 386583494)))
+#= 312213338
+#= 386583494
+dedges = pd.read_csv('edges_' + city + '.csv')
+dfedges = pd.DataFrame(dedges)
+dfedges = dfedges.loc[:, ~dfedges.columns.str.contains('^Unnamed')]
+dfedges = dfedges.dropna(subset=['coords'])
+for u, v, k in G.edges(keys=True):
+    tupledge = str(tuple((u, v)))
+    if tupledge in dfedges.values:
+        coords = list(
+            dfedges.loc[dfedges['edgeid'] == tupledge]['coords'].apply(
+                ast.literal_eval))
+        values = []
+        if len(coords) != 0:
+            for i in range(len(coords[0])):
+                for index, row in df.iterrows():
+                    if math.isclose(row['lat'],
+                                    round(coords[0][i][1], 4),
+                                    abs_tol=0.0004) and math.isclose(
+                                        row['lon'],
+                                        round(coords[0][i][0], 4),
+                                        abs_tol=0.0004):
+                        values.append(row['value'])
+            G[u][v][k]['Pollution'] = sum(values) / len(values)
+    else:
+        G[u][v][k]['Pollution'] = (nodes['Pollution'][u] +
+                                   nodes['Pollution'][v]) / 2
+# %%
+import networkx as nx
+
+origin_yx = tuple((41.340791660130094, 1.6975732796178806))
+destination_yx = tuple((41.352737557131356, 1.7011326493244299))
+origin_node = ox.get_nearest_node(G, origin_yx)
+destination_node = ox.get_nearest_node(G, destination_yx)
+nx.shortest_path_length(G, origin_node, destination_node, weight='Pollution')
+route = nx.shortest_path(G, origin_node, destination_node, weight='Pollution')
+ox.plot.plot_graph_route(G, route)
 #%%
 import osmnx as ox
-gdf=ox.geocoder.geocode_to_gdf("vilafranca del penedes")
-gdf['bbox_north']
+import networkx as nx
+import pandas as pd
+import ast
+import math
+import re
+import time
+
+G = ox.graph_from_place("vilafranca del penedes")
+city="vilafranca del penedes"
+increment=4
+nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+if os.path.exists('points_' + city + '.csv'):
+    d = pd.read_csv('points_' + city + '.csv')
+    df = pd.DataFrame(d)
+    #nodes
+    df = df.sort_values(by=['ndist'])
+    df = df.drop_duplicates(keep='first', subset='node')
+    nodes['Pollution'] = float(0)
+    for ind in df.index:
+        nodes['Pollution'][int(df['node'][ind])] = df['value'][ind]
+    G = ox.graph_from_gdfs(nodes, edges)
+    #edges
+    dedges = pd.read_csv('edges_' + city + '.csv')
+    dfedges = pd.DataFrame(dedges)
+    dfedges = dfedges.loc[:, ~dfedges.columns.str.contains('^Unnamed')]
+    dfedges = dfedges.dropna(subset=['coords'])
+    for u, v, k in G.edges(keys=True):
+        tupledge = str(tuple((u, v)))
+        if tupledge in dfedges.values:
+            coords = list(
+                dfedges.loc[dfedges['edgeid'] == tupledge]['coords'].apply(
+                    ast.literal_eval))
+            values = []
+            if len(coords) != 0:
+                for i in range(len(coords[0])):
+                    for index, row in df.iterrows():
+                        if math.isclose(row['lat'],
+                                        round(coords[0][i][1], increment),
+                                        abs_tol=0.0004) and math.isclose(
+                                            row['lon'],
+                                            round(coords[0][i][0], increment),
+                                            abs_tol=0.0004):
+                            values.append(row['value'])
+                G[u][v][k]['Pollution'] = (sum(values) / len(values))
+        else:
+            G[u][v][k]['Pollution'] = (nodes['Pollution'][u] +
+                                       nodes['Pollution'][v]) / 2
+    G2 = G
+    for u, v, k in G2.edges(keys=True):
+        print(G2[u][v][k])
+    toc = time.time()
+origin_yx = tuple((41.340791660130094, 1.6975732796178806))
+destination_yx = tuple((41.352737557131356, 1.7011326493244299))
+origin_node = ox.get_nearest_node(G2, origin_yx)
+destination_node = ox.get_nearest_node(G2, destination_yx)
+nx.shortest_path_length(G2, origin_node, destination_node, weight='Pollution')
+route = nx.shortest_path(G2, origin_node, destination_node, weight='Pollution')
+ox.plot.plot_graph_route(G2, route)
+#%%
+import osmnx as ox
+import networkx as nx
+G2=ox.graph_from_place("vilafranca del penedes")
+G=ox.load_graphml("updated_graph.xml")
+#%%
+origin_yx = tuple((41.340791660130094, 1.6975732796178806))
+destination_yx = tuple((41.352737557131356, 1.7011326493244299))
+origin_node = ox.get_nearest_node(G, origin_yx)
+destination_node = ox.get_nearest_node(G, destination_yx)
+nx.shortest_path_length(G, origin_node, destination_node, weight='Pollution')
+route = nx.shortest_path(G, origin_node, destination_node, weight='Pollution')
+ox.plot.plot_graph_route(G, route)
