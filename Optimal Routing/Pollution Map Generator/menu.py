@@ -45,13 +45,13 @@ while True:
         )
         os.system('cls' if os.name == 'nt' else 'clear')
         if update:
-            api.updateValues(origin_yx[1], origin_yx[0], destination_yx[1],
-                             destination_yx[0], city, 100, 4, G)
+            api.updateValues(origin_yx[0], origin_yx[1], destination_yx[0],
+                             destination_yx[1], city, 100, 4, G)
             print("Pollution values updated \n")
         else:
             nodelistpolluted, nodelistfast, nodelistmix = api.routesComputing(
-                origin_yx[1], origin_yx[0], destination_yx[1],
-                destination_yx[0], G, city)
+                origin_yx[0], origin_yx[1], destination_yx[0],
+                destination_yx[1], city)
             lesspollutedsum = 0
             fastsum = 0
             for i in range(len(nodelistpolluted)):

@@ -312,10 +312,11 @@ import ast
 import math
 import re
 import time
+import mappoAPI as api
 
 G = ox.graph_from_place("vilafranca del penedes")
-city="vilafranca del penedes"
-increment=4
+city = "vilafranca del penedes"
+increment = 4
 nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
 if os.path.exists('points_' + city + '.csv'):
     d = pd.read_csv('points_' + city + '.csv')
@@ -354,26 +355,36 @@ if os.path.exists('points_' + city + '.csv'):
             G[u][v][k]['Pollution'] = (nodes['Pollution'][u] +
                                        nodes['Pollution'][v]) / 2
     G2 = G
-    for u, v, k in G2.edges(keys=True):
-        print(G2[u][v][k])
     toc = time.time()
+#%%
+ox.save_graphml(G2, "updated_graph.graphml")
+G2 = ox.load_graphml("updated_graph.graphml",
+                     node_dtypes={'Pollution': float},
+                     edge_dtypes={'Pollution': float})
+#%%
 origin_yx = tuple((41.340791660130094, 1.6975732796178806))
 destination_yx = tuple((41.352737557131356, 1.7011326493244299))
 origin_node = ox.get_nearest_node(G2, origin_yx)
 destination_node = ox.get_nearest_node(G2, destination_yx)
 nx.shortest_path_length(G2, origin_node, destination_node, weight='Pollution')
+# %%
 route = nx.shortest_path(G2, origin_node, destination_node, weight='Pollution')
-ox.plot.plot_graph_route(G2, route)
-#%%
-import osmnx as ox
-import networkx as nx
-G2=ox.graph_from_place("vilafranca del penedes")
-G=ox.load_graphml("updated_graph.xml")
-#%%
-origin_yx = tuple((41.340791660130094, 1.6975732796178806))
-destination_yx = tuple((41.352737557131356, 1.7011326493244299))
-origin_node = ox.get_nearest_node(G, origin_yx)
-destination_node = ox.get_nearest_node(G, destination_yx)
-nx.shortest_path_length(G, origin_node, destination_node, weight='Pollution')
-route = nx.shortest_path(G, origin_node, destination_node, weight='Pollution')
-ox.plot.plot_graph_route(G, route)
+fastroute = nx.shortest_path(G=G2,
+                             source=origin_node,
+                             target=destination_node,
+                             weight='length')
+mixroute = nx.shortest_path(G=G2,
+                            source=origin_node,
+                            target=destination_node,
+                            weight='mix')
+filepath = 'routes.html'
+rc = ['r', 'g', 'y']
+ec = ox.plot.get_edge_colors_by_attr(G2, 'Pollution', cmap='autumn')
+fig, ax = ox.plot_graph(G2, edge_color=ec, node_size=0, edge_linewidth=3)
+fig, ax = ox.plot_graph_routes(G2, [fastroute, route, mixroute],
+                               route_colors=rc,
+                               route_linewidth=6)
+filename = "lesspollutedroute.csv"
+api.mapFolium(G2, route, fastroute, mixroute, filepath, origin_yx,
+              destination_yx, city)
+# %%

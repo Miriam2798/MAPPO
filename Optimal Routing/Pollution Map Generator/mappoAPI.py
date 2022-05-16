@@ -452,7 +452,10 @@ def mapFolium(G2, route, fastroute, mixroute, filepath, originyx,
                                      fastroute,
                                      route_map=route_map,
                                      route_color='#ff0000')
-    route_map = ox.plot_route_folium(G2, route, route_color='#FFFF00')
+    route_map = ox.plot_route_folium(G2,
+                                     mixroute,
+                                     route_color='#ffff00',
+                                     route_map=route_map)
     HeatMap(data=df, radius=15, max_zoom=13).add_to(route_map)
     #HeatMap(df, radius=15, min_opacity=0.4, max_zoom=1000).add_to(route_map)
     # HeatMap(df,
@@ -632,11 +635,13 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         }
         df = pd.DataFrame(d)
         df.to_csv('points_' + city + '.csv')
-    ox.save_graphml(G2, "updated_graph.txt")
+    ox.save_graphml(G2, "updated_graph.graphml")
 
 
-def routesComputing(originy, originx, destinationy, destinationx, G, city):
-    G2 = ox.load_graphml("updated_graph.txt")
+def routesComputing(originy, originx, destinationy, destinationx, city):
+    G2 = ox.load_graphml("updated_graph.graphml",
+                         node_dtypes={'Pollution': float},
+                         edge_dtypes={'Pollution': float})
     origin_yx = tuple((float(originy), float(originx)))
     destination_yx = tuple((float(destinationy), float(destinationx)))
     origin_node = ox.get_nearest_node(G2, origin_yx)
