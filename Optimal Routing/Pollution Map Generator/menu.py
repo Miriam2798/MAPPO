@@ -6,6 +6,27 @@ import os
 import mappoAPI as api
 import networkx as nx
 import osmnx as ox
+from termcolor import colored
+
+
+def filesCheck(city, networktype):
+    if os.path.exists('points_' + city + '_' + networktype +
+                      '.csv') and os.path.exists('edges_' + city + '_' +
+                                                 networktype + '.csv'):
+        pointsEdges = True
+    else:
+        pointsEdges = False
+    if os.path.exists('map.csv'):
+        pollutionMap = True
+    else:
+        pollutionMap = False
+    if os.path.exists("updated_graph_"
+                      f"{city}_"
+                      f"{networktype}.graphml"):
+        updated = True
+    else:
+        updated = False
+    return pollutionMap, pointsEdges, updated
 
 
 def menu():
@@ -17,41 +38,68 @@ def menu():
         \/         \/                           \/ v0.3 """)
     time.sleep(1)
     print("1. Simulate Pollution Map \n")
-    print("2. Transform Pollution Map (DEPRECATED) \n")
-    print("3. Calculate Fastest Route \n")
-    print("4. Calculate Less Polluted Route \n")
-    print("5. Exit \n")
+    print("2. Calculate the 3 routes \n")
+    print("3. Exit \n")
 
 
 loop = True
 while True:
     os.system('cls' if os.name == 'nt' else 'clear')
     menu()
-    choice = input("Enter your choice [1-5]: \n")
+    choice = input("Enter your choice [1-3]: \n")
     os.system('cls' if os.name == 'nt' else 'clear')
     if choice == "1":
-        #pm.main()
         generated_points, reso, nn = api.mainPollutionMapGenerator()
         api.pollutionMapGenerator(generated_points, reso, nn)
-    elif choice == "2":
-        tm.main()
-    elif choice == "3":
-        #fp.main()
-        city, origin_yx, destination_yx = api.mainFastestRoute()
-        api.fastest_route(origin_yx[0], origin_yx[1], destination_yx[0],
-                          destination_yx[1], city)
-    elif choice == '4':
+    elif choice == '2':
         city, origin_yx, destination_yx, nodes, edges, G, update, networktype = api.mainLessPollutedRoute(
         )
+        pollutionMap, pointsEdges, updated = filesCheck(city, networktype)
         os.system('cls' if os.name == 'nt' else 'clear')
-        if update:
+        if pollutionMap:
+            print(colored('\n (OK) Pollution Map file (map.csv)', 'green'))
+        else:
+            print(
+                colored('\n (FAIL) Pollution Map file (map.csv is missing)',
+                        'red'))
+            print(
+                "\n Please, simulate the map using the first option in the menu. "
+            )
+        if pointsEdges:
+            print(
+                colored(
+                    '\n (OK) Nodes and Edges files (points_city_networktype.csv & edges_city_networktype.csv)',
+                    'green'))
+        else:
+            print(
+                colored(
+                    '\n (FAIL) Nodes and Edges files (points_city_networktype.csv & edges_city_networktype.csv) are missing',
+                    'red'))
+        if updated:
+            print(
+                colored(
+                    '\n (OK) Edge update file (updated_graph_city_networktype.csv)',
+                    'green'))
+        else:
+            print(
+                colored(
+                    '\n (FAIL) Edge update file (updated_graph_city_networktype.csv) is missing',
+                    'red'))
+            print(
+                "\n You said no to updating pollution values but it appears you don't have a updated file yet. We will update it for you...\n"
+            )
+        if pollutionMap and updated and pointsEdges:
+            print(colored('\n ALL REQUIRED FILES FOUND. PROCEEDING...'))
+        exitwait = input("\n PRESS ANY KEY TO PROCEED\n ")
+        os.system('cls' if os.name == 'nt' else 'clear')
+        if update or not updated and pollutionMap:
             api.updateValues(origin_yx[0], origin_yx[1], destination_yx[0],
                              destination_yx[1], city, 100, 4, G, networktype)
             print("Pollution values updated. \n")
-        else:
+        elif pollutionMap:
             nodelistpolluted, nodelistfast, nodelistmix = api.routesComputing(
                 origin_yx[0], origin_yx[1], destination_yx[0],
-                destination_yx[1], city)
+                destination_yx[1], city, networktype)
             lesspollutedsum = 0
             fastsum = 0
             mixsum = 0
@@ -72,8 +120,8 @@ while True:
                             ((lesspollutedsum / fastsum) * 100), 2)) + "%\n")
             print("Exposure to Pollution reduction (YELLOW ROUTE):" +
                   str(round(100 - ((mixsum / fastsum) * 100), 2)) + "%\n")
-        exitwait = input("")
-    elif choice == "5":
+        exitwait = input("Press any key...")
+    elif choice == "3":
         loop = False
         os.system('cls' if os.name == 'nt' else 'clear')
         break
