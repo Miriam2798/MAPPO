@@ -86,12 +86,18 @@ def mainPollutionMapGenerator():
     )
     time.sleep(1)
     generated_points = input(
-        "Please specify the number of points generated (100 to 10000) default=1000: \n"
+        "Please specify the number of points generated (100 to 10000) (default=1000): \n"
     )
     resolution = input(
-        "Please specify the resolution (250 to 500) default=100: \n")
+        "Please specify the resolution (250 to 500) (default=100): \n")
     nn = input(
         "Please, specify the Nearest Neighbour parameter (default=16): \n")
+    if generated_points == "":
+        generated_points = 1000
+    if resolution == "":
+        resolution = 100
+    if nn == "":
+        nn = 16
     return generated_points, resolution, nn
 
 
@@ -116,12 +122,12 @@ class Node:
 
 
 # If exists, imports the graph from the file. The file is created after searching for a place once and for each one
-def importFile(place):
+def importFile(place, networktype):
     if os.path.exists(f'{place}_graph.txt'):
         return ox.load_graphml(f'{place}_graph.txt')
     print("\nFirst time running the script for " + place +
           ". Loading and Saving graph...\n")
-    G = ox.graph_from_place(place, network_type='drive', simplify=True)
+    G = ox.graph_from_place(place, network_type=networktype, simplify=True)
     ox.save_graphml(G, f"{place}_graph.txt")
     return G
 
@@ -148,10 +154,11 @@ def mainFastestRoute():
 
 
 # Calculates the fastest route of a place
-def fastest_route(originx, originy, destinationx, destinationy, place):
+def fastest_route(originx, originy, destinationx, destinationy, place,
+                  networktype):
     removeWarnings()
     #Imports the graph
-    G = importFile(place)
+    G = importFile(place, networktype)
     #Generates tuples from the given coordinates
     origin_xy = tuple((float(originx), float(originy)))
     destination_xy = tuple((float(destinationx), float(destinationy)))
@@ -275,15 +282,42 @@ class Point:
     #     self.edgeVal = edgeVal
 
 
-def dataMapping(origin_yx, destination_yx, city, reso, increment):
+def dataMapping(origin_yx, destination_yx, city, reso, increment, networktype):
+    """
+    Pollution data projection depending on the given area. Coordinates are assignated to the 
+    simulated pollution values.
+    
+    Parameters
+    ----------
+    origin_yx : tuple of two floats
+            tuple of the latitude and longitude origin coordinates.
+    destination_yx : tuple of two floats
+            tuple of the latitude and longitude destination coordinates.
+    city : string
+            name of the place/city where we want to extract the graph.
+    reso : int
+            resolution of the pollution matrix. it has to be the same as the 
+            value used for pollution matrix generation. a value of 100 means we
+            have a 100x100 matrix in the pollution matrix, or 10000 cells.
+    increment : int
+            number of decimals to round the coordinates. example: with a value
+            of 4, we are using 41.1234 instead of 41.123456789 
+    networktype : string
+            depending on our needs, we will extract a graph to commute by walk, car,
+            bike, etc.
+    Returns
+    -------
+    points : list of Points objects
+            list of points with the given pollution values and their respective 
+            coordinates
+    """
     removeWarnings()
-    G = importFile(city)
+    G = importFile(city, networktype)
     gdf = ox.geocoder.geocode_to_gdf(city)
     ymax = float(gdf['bbox_north'])
     ymin = float(gdf['bbox_south'])
     xmax = float(gdf['bbox_east'])
     xmin = float(gdf['bbox_west'])
-    # Gnx = nx.relabel.convert_node_labels_to_integers(G)
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
     nodes['Pollution'] = float(0)
     pollutionMatrix = np.loadtxt(open("map.csv", "rb"), delimiter=",")
@@ -340,33 +374,14 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment):
     return points
 
 
-#Set Pollution values to edges
-#def set_values_to_edges(points, G):
-#    edist = 0
-#    first = True
-#    for p in range(len(points)):
-#        y = points[p].getY()
-#        x = points[p].getX()
-#        point = tuple((y, x))
-#        ne, edist = ox.distance.nearest_edges(G=G, X=x, Y=y, return_dist=True)
-#        if first:
-#            epdist = edist
-#            first = False
-#        if edist <= epdist:
-#            print("Edge " + str(ne[0]) + " " + str(ne[1]) + " " + str(ne[2]) +
-#                  " has a value of " + str(points[p].getValue()) +
-#                  " and the nearest point is " + str(point) +
-#                  " at a distance of " + str(edist) + "\n")
-#            G[ne[0]][ne[1]][0]['Pollution'] = 1 - points[p].getValue()
-#        points[p].setEdge((ne[0], ne[1]))
-#        points[p].setEdist(edist)
-#    return G
-
-
+#set values to edges in MultiDiGraph G
 def set_values_to_edges(points, G, nodes, increment):
     edges = []
     coords = []
+    lengthmax = 0
     for u, v, k in G.edges(keys=True):
+        if G[u][v][k]['length'] > lengthmax:
+            lengthmax = G[u][v][k]['length']
         if not 'geometry' in G[u][v][k]:
             G[u][v][k]['Pollution'] = (
                 (nodes['Pollution'][u] + nodes['Pollution'][v]) / 2)
@@ -388,9 +403,6 @@ def set_values_to_edges(points, G, nodes, increment):
                                         points[p].getX(),
                                         round(a[i][0], increment),
                                         abs_tol=0.0004):
-                        # if points[p].getY() == round(
-                        #         a[i][1], increment) and points[p].getX() == round(
-                        #             a[i][0], increment):
                         pollutionValues.append(float(points[p].getValue()))
                     else:
                         pollutionValues.append("")
@@ -405,7 +417,7 @@ def set_values_to_edges(points, G, nodes, increment):
     data = {'edgeid': edges, 'coords': coords}
     for u, v, k in G.edges(keys=True):
         G[u][v][k]['length'] = G[u][v][k]['length'] / lengthmax
-        mix = G[u][v][k]['length'] * 0.5 + G[u][v][k]['Pollution'] * 0.5
+        mix = (G[u][v][k]['length'] * 0.5) + (G[u][v][k]['Pollution'] * 0.5)
         G[u][v][k]['mix'] = float(mix)
     return G, data
 
@@ -487,44 +499,74 @@ def mainLessPollutedRoute():
         \/   \/     \/     \/                                             \/     \/          \/                        \/ """
     )
     time.sleep(1)
-    city = input("Please, insert the place name: (example: Barcelona) \n")
-    originy, originx = input(
-        "Please, insert the origin coordinates: (example: 41.59047, 2.45235) \n"
-    ).split(", ")
-    destinationy, destinationx = input(
-        "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
-    ).split(", ")
-    update = input("Do you want to update pollution values? \n")
+    city = input(
+        "Please, insert the place name: (DEFAULT: Vilafranca del Penedes) \n")
+    origin_yx = input(
+        "Please, insert the origin coordinates: (DEFAULT: 41.59047, 2.45235) \n"
+    )
+    destination_yx = input(
+        "Please, insert the destination coordinates: (DEFAULT: 41.59047, 2.45235) \n"
+    )
+    update = input("Do you want to update pollution values? (DEFAULT: no)\n")
+    networktype = input(
+        "\nChoose your vehicle: (DEFAULT: drive)\n\nallprivate (ap)\nall (a)\nbike (b)\ndrive (d)\ndriveservice (ds)\nwalk(w)\n\n"
+    )
+    if city == "":
+        city = "Vilafranca del Penedes"
+    if origin_yx == "":
+        origin_yx = tuple((41.35573308927855, 1.7036498466171413))
+    if destination_yx == "":
+        destination_yx = tuple((41.33807786672571, 1.692663518892109))
+    if networktype == "ap":
+        networktype = "all_private"
+    elif networktype == "a":
+        networktype = "all"
+    elif networktype == "b":
+        networktype = "bike"
+    elif networktype == "d":
+        networktype = "drive"
+    elif networktype == "ds":
+        networktype = "drive_service"
+    elif networktype == "w":
+        networktype = "walk"
+    elif networktype == "":
+        networktype = "drive"
+    else:
+        print(
+            "\nPlease, enter a valid option or read the documentation for more information.\n"
+        )
     if update == "yes":
         update = True
     else:
         update = False
-    G = importFile(city)
-    #Gnx = nx.relabel.convert_node_labels_to_integers(G)
+    G = importFile(city, networktype)
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
-    return city, tuple((originy, originx)), tuple(
-        (destinationy, destinationx)), nodes, edges, G, update
+    return city, origin_yx, destination_yx, nodes, edges, G, update, networktype
 
 
-def importFileFromPoint(place, originy, originx, destinationy, destinationx):
+def importFileFromPoint(place, originy, originx, destinationy, destinationx,
+                        networktype):
 
     center_pointx = (originx + destinationx) / 2
     center_pointy = (originy + destinationy) / 2
     center_point = tuple((center_pointy, center_pointx))
     distance = geopy.distance.geodesic(center_point, tuple(
         (originy, originx))).m + 1000
-    G5 = ox.graph_from_point(center_point, distance, dist_type="bbox")
+    G5 = ox.graph_from_point(center_point,
+                             distance,
+                             dist_type="bbox",
+                             network_type=networktype)
     fig, ax = ox.plot_graph(G5, node_size=0, edge_linewidth=3)
 
 
 #Less Polluted route function
 def updateValues(originx, originy, destinationx, destinationy, city, reso,
-                 increment, G):
+                 increment, G, networktype):
     removeWarnings()
-    #Gnx = nx.relabel.convert_node_labels_to_integers(G)
     tic = time.time()
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
-    if os.path.exists('points_' + city + '.csv'):
+    if os.path.exists('points_' + city +
+                      '.csv') and os.path.exists('edges_' + city + '.csv'):
         d = pd.read_csv('points_' + city + '.csv')
         df = pd.DataFrame(d)
         #nodes
@@ -533,19 +575,7 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         nodes['Pollution'] = float(0)
         for ind in df.index:
             nodes['Pollution'][int(df['node'][ind])] = df['value'][ind]
-
         G = ox.graph_from_gdfs(nodes, edges)
-        #edges
-        # df = df.sort_values(by=['edist'])
-        # df = df.drop_duplicates(keep='first', subset='edge')
-        # for ind in df.index:
-        #     id = df['edge'][ind].split(",")
-        #     id[0] = int(id[0].replace("(", ""))
-        #     id[1] = int(id[1].replace(")", ""))
-        #     # G[id[0]][id[1]][0]['Pollution'] = 1 - df['value'][ind]
-        #     G[id[0]][id[1]][0]['Pollution'] = 1 - (
-        #         nodes['Pollution'][id[0]] + nodes['Pollution'][id[1]]) / 2
-
         #edges
         dedges = pd.read_csv('edges_' + city + '.csv')
         dfedges = pd.DataFrame(dedges)
@@ -569,15 +599,13 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
                                                       increment),
                                                 abs_tol=0.0004):
                                 values.append(row['value'])
-                    G[u][v][k]['Pollution'] = (sum(values) / len(values))
+                    if len(values) != 0:
+                        G[u][v][k]['Pollution'] = (sum(values) / len(values))
+                    else:
+                        G[u][v][k]['Pollution'] = 0.5
             else:
                 G[u][v][k]['Pollution'] = (nodes['Pollution'][u] +
                                            nodes['Pollution'][v]) / 2
-
-        #this works and is fast
-        # for u, v, k in G.edges(keys=True):
-        #     G[u][v][k]['Pollution'] = (
-        #         (nodes['Pollution'][u] + nodes['Pollution'][v]) / 2)
         G2 = G
         toc = time.time()
         print("Node & Edge importing lasted: " + str(toc - tic))
@@ -585,7 +613,8 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         origin_yx = tuple((originy, originx))
         destination_yx = tuple((destinationy, destinationx))
         print("\nFirst time running the script. Mapping the data...\n")
-        points = dataMapping(origin_yx, destination_yx, city, reso, increment)
+        points = dataMapping(origin_yx, destination_yx, city, reso, increment,
+                             networktype)
 
         # cores = mp.cpu_count()
         # points_split = np.array_split(points, cores, axis=0)
@@ -639,9 +668,50 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
 
 
 def routesComputing(originy, originx, destinationy, destinationx, city):
+    """
+    Calculates 3 different routes:
+    
+    -Shortest route: Computes the shortest path from point A to B using Dijkstra's
+    algorithm, given the edge length as weight.
+    
+    -Combined route: Computes the shortest path from point A to B using Dijkstra's
+    algorithm, given a combination of 2 edge parameters (the edge length and pollution amount).
+    
+    -Less pollution exposed route: Computes the shortest path from point A to B using Dijkstra's
+    algorithm, given the edge pollution amount as weight.
+    
+    Parameters
+    ----------
+    originy : float
+            latitude coordinate of origin point
+    originx : float
+            longitude coordinate of origin point
+    destinationy : float
+            latitude coordinate of the destination point
+    destinationx : float
+            longitude coordinate of the destination point
+    city : string
+            name of the place/city where we want to extract the graph
+    
+    Returns
+    -------
+    export(G2, route, "lesspollutedroute.csv") : function call for the exportation of a nodelist
+            given the less polluted route. Creation of a csv file called lesspollutedroute.csv
+    export(G2, route, "fastestroute.csv") : function call for the exportation of a nodelist
+            given the shortest route. Creation of a csv file called fastestroute.csv
+    export(G2, route, "mixroute.csv") : function call for the exportation of a nodelist
+            given the combined route. Creation of a csv file called mixroute.csv
+    """
+    removeWarnings()
     G2 = ox.load_graphml("updated_graph.graphml",
-                         node_dtypes={'Pollution': float},
-                         edge_dtypes={'Pollution': float})
+                         node_dtypes={
+                             'Pollution': float,
+                             'mix': float
+                         },
+                         edge_dtypes={
+                             'Pollution': float,
+                             'mix': float
+                         })
     origin_yx = tuple((float(originy), float(originx)))
     destination_yx = tuple((float(destinationy), float(destinationx)))
     origin_node = ox.get_nearest_node(G2, origin_yx)
@@ -666,16 +736,8 @@ def routesComputing(originy, originx, destinationy, destinationx, city):
     fig, ax = ox.plot_graph_routes(G2, [fastroute, route, mixroute],
                                    route_colors=rc,
                                    route_linewidth=6)
-    # fig, ax = ox.plot_graph_route(
-    #     G2,
-    #     route,
-    #     route_color="r",
-    #     orig_dest_size=100,
-    #     ax=None,
-    # )
-    filename = "lesspollutedroute.csv"
     mapFolium(G2, route, fastroute, mixroute, filepath, origin_yx,
               destination_yx, city)
-    return export(G2, route,
-                  filename), export(G2, fastroute, "fastestroute.csv"), export(
-                      G2, mixroute, "mixroute.csv")
+    return export(G2, route, "lesspollutedroute.csv"), export(
+        G2, fastroute, "fastestroute.csv"), export(G2, mixroute,
+                                                   "mixroute.csv")

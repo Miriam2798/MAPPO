@@ -41,29 +41,37 @@ while True:
         api.fastest_route(origin_yx[0], origin_yx[1], destination_yx[0],
                           destination_yx[1], city)
     elif choice == '4':
-        city, origin_yx, destination_yx, nodes, edges, G, update = api.mainLessPollutedRoute(
+        city, origin_yx, destination_yx, nodes, edges, G, update, networktype = api.mainLessPollutedRoute(
         )
         os.system('cls' if os.name == 'nt' else 'clear')
         if update:
             api.updateValues(origin_yx[0], origin_yx[1], destination_yx[0],
-                             destination_yx[1], city, 100, 4, G)
-            print("Pollution values updated \n")
+                             destination_yx[1], city, 100, 4, G, networktype)
+            print("Pollution values updated. \n")
         else:
             nodelistpolluted, nodelistfast, nodelistmix = api.routesComputing(
                 origin_yx[0], origin_yx[1], destination_yx[0],
                 destination_yx[1], city)
             lesspollutedsum = 0
             fastsum = 0
+            mixsum = 0
             for i in range(len(nodelistpolluted)):
                 lesspollutedsum += nodelistpolluted[i].getValue()
             for i in range(len(nodelistfast)):
                 fastsum += nodelistfast[i].getValue()
-            print("\nLess Pollute Route Pollution: " + str(lesspollutedsum) +
+            for i in range(len(nodelistmix)):
+                mixsum += nodelistmix[i].getValue()
+            print("\n(GREEN ROUTE) Less Pollute Route Pollution: " +
+                  str(lesspollutedsum) + "\n")
+            print("\n(YELLOW ROUTE) Combined Pollution/distance Pollution: " +
+                  str(mixsum) + "\n")
+            print("\n(RED ROUTE) Shortest Route Pollution: " + str(fastsum) +
                   "\n")
-            print("Shortest Route Pollution: " + str(fastsum) + "\n")
-            print("Exposure to Pollution reduction: " +
+            print("\nExposure to Pollution reduction (GREEN ROUTE): " +
                   str(round(100 -
-                            ((fastsum / lesspollutedsum) * 100), 2)) + "%\n")
+                            ((lesspollutedsum / fastsum) * 100), 2)) + "%\n")
+            print("Exposure to Pollution reduction (YELLOW ROUTE):" +
+                  str(round(100 - ((mixsum / fastsum) * 100), 2)) + "%\n")
         exitwait = input("")
     elif choice == "5":
         loop = False

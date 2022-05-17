@@ -388,3 +388,7 @@ filename = "lesspollutedroute.csv"
 api.mapFolium(G2, route, fastroute, mixroute, filepath, origin_yx,
               destination_yx, city)
 # %%
+import osmnx as ox
+
+G = ox.graph_from_place("vilafranca del penedes",network_type="bike")
+ox.plot_graph(G)
