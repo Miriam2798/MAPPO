@@ -70,7 +70,7 @@ def pollutionMapGenerator(generated_points, resolution, nn):
     im = (im - np.min(im)) / np.ptp(im)
     # Plot im as a heatmap
     plt.imshow(im, origin='lower', extent=extent, cmap=cm.turbo)
-    plt.show()
+    plt.show(block=False)
     # Export as a csv file
     exportMap(im)
 
@@ -123,12 +123,15 @@ class Node:
 
 # If exists, imports the graph from the file. The file is created after searching for a place once and for each one
 def importFile(place, networktype):
-    if os.path.exists(f'{place}_graph.txt'):
-        return ox.load_graphml(f'{place}_graph.txt')
+    if os.path.exists(f'{place}_graph_'
+                      f'{networktype}.txt'):
+        return ox.load_graphml(f'{place}_graph_'
+                               f'{networktype}.txt')
     print("\nFirst time running the script for " + place +
           ". Loading and Saving graph...\n")
     G = ox.graph_from_place(place, network_type=networktype, simplify=True)
-    ox.save_graphml(G, f"{place}_graph.txt")
+    ox.save_graphml(G, f"{place}_graph_"
+                    f"{networktype}.txt")
     return G
 
 
@@ -450,8 +453,8 @@ def set_values_to_nodes(points, nodes, G):
 
 #Export map as route.html using folium
 def mapFolium(G2, route, fastroute, mixroute, filepath, originyx,
-              destinationyx, city):
-    d = pd.read_csv('points_' + city + '.csv')
+              destinationyx, city, networktype):
+    d = pd.read_csv('points_' + city + '_' + networktype + '.csv')
     df = pd.DataFrame(d)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df.loc[:, ~df.columns.str.contains('node')]
@@ -565,9 +568,10 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
     removeWarnings()
     tic = time.time()
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
-    if os.path.exists('points_' + city +
-                      '.csv') and os.path.exists('edges_' + city + '.csv'):
-        d = pd.read_csv('points_' + city + '.csv')
+    if os.path.exists('points_' + city + '_' + networktype +
+                      '.csv') and os.path.exists('edges_' + city + '_' +
+                                                 networktype + '.csv'):
+        d = pd.read_csv('points_' + city + '_' + networktype + '.csv')
         df = pd.DataFrame(d)
         #nodes
         df = df.sort_values(by=['ndist'])
@@ -577,7 +581,7 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
             nodes['Pollution'][int(df['node'][ind])] = df['value'][ind]
         G = ox.graph_from_gdfs(nodes, edges)
         #edges
-        dedges = pd.read_csv('edges_' + city + '.csv')
+        dedges = pd.read_csv('edges_' + city + '_' + networktype + '.csv')
         dfedges = pd.DataFrame(dedges)
         dfedges = dfedges.loc[:, ~dfedges.columns.str.contains('^Unnamed')]
         dfedges = dfedges.dropna(subset=['coords'])
@@ -637,7 +641,7 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         ripnodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
         G2 = ox.graph_from_gdfs(nodes, edges)
         dfedges = pd.DataFrame(data)
-        dfedges.to_csv('edges_' + city + '.csv')
+        dfedges.to_csv('edges_' + city + '_' + networktype + '.csv')
         lat = []
         lon = []
         val = []
@@ -663,11 +667,13 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
             #'edist': edist
         }
         df = pd.DataFrame(d)
-        df.to_csv('points_' + city + '.csv')
-    ox.save_graphml(G2, "updated_graph.graphml")
+        df.to_csv('points_' + city + '_' + networktype + '.csv')
+    ox.save_graphml(G2,
+                    "updated_graph_" + city + "_" + networktype + ".graphml")
 
 
-def routesComputing(originy, originx, destinationy, destinationx, city):
+def routesComputing(originy, originx, destinationy, destinationx, city,
+                    networktype):
     """
     Calculates 3 different routes:
     
@@ -703,7 +709,9 @@ def routesComputing(originy, originx, destinationy, destinationx, city):
             given the combined route. Creation of a csv file called mixroute.csv
     """
     removeWarnings()
-    G2 = ox.load_graphml("updated_graph.graphml",
+    G2 = ox.load_graphml("updated_graph_"
+                         f"{city}_"
+                         f"{networktype}.graphml",
                          node_dtypes={
                              'Pollution': float,
                              'mix': float
@@ -737,7 +745,7 @@ def routesComputing(originy, originx, destinationy, destinationx, city):
                                    route_colors=rc,
                                    route_linewidth=6)
     mapFolium(G2, route, fastroute, mixroute, filepath, origin_yx,
-              destination_yx, city)
+              destination_yx, city, networktype)
     return export(G2, route, "lesspollutedroute.csv"), export(
         G2, fastroute, "fastestroute.csv"), export(G2, mixroute,
                                                    "mixroute.csv")
