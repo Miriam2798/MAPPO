@@ -21,6 +21,7 @@ from shapely.geometry import shape
 import math
 import geopandas as gp
 import ast
+from networkx.classes.function import path_weight
 
 
 #Remove warnings
@@ -510,6 +511,11 @@ def mainLessPollutedRoute():
     destination_yx = input(
         "Please, insert the destination coordinates: (DEFAULT: 41.59047, 2.45235) \n"
     )
+    if origin_yx != "" and destination_yx != "":
+        originy, originx = origin_yx.split(", ")
+        destinationy, destinationx = destination_yx.split(", ")
+        origin_yx = tuple((originy, originx))
+        destination_yx = tuple((destinationy, destinationx))
     update = input("Do you want to update pollution values? (DEFAULT: no)\n")
     networktype = input(
         "\nChoose your vehicle: (DEFAULT: drive)\n\nallprivate (ap)\nall (a)\nbike (b)\ndrive (d)\ndriveservice (ds)\nwalk(w)\n\n"
@@ -517,9 +523,9 @@ def mainLessPollutedRoute():
     if city == "":
         city = "Vilafranca del Penedes"
     if origin_yx == "":
-        origin_yx = tuple((41.35573308927855, 1.7036498466171413))
+        origin_yx = tuple((41.34966753431925, 1.6959634103837375))
     if destination_yx == "":
-        destination_yx = tuple((41.33807786672571, 1.692663518892109))
+        destination_yx = tuple((41.33632345834082, 1.6946716922151437))
     if networktype == "ap":
         networktype = "all_private"
     elif networktype == "a":
@@ -610,6 +616,9 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
             else:
                 G[u][v][k]['Pollution'] = (nodes['Pollution'][u] +
                                            nodes['Pollution'][v]) / 2
+            G[u][v][k]['mix'] = (
+                G[u][v][k]['Pollution'] +
+                (G[u][v][k]['length'] / edges['length'].max())) / 2
         G2 = G
         toc = time.time()
         print("Node & Edge importing lasted: " + str(toc - tic))
@@ -736,6 +745,9 @@ def routesComputing(originy, originx, destinationy, destinationx, city,
                                 source=origin_node,
                                 target=destination_node,
                                 weight='mix')
+    lesspollutedpathweight = path_weight(G2, route, weight="Pollution")
+    fastroutepathweight = path_weight(G2, fastroute, weight="Pollution")
+    mixedpathweight = path_weight(G2, mixroute, weight="Pollution")
     #routeTC = tc.distance.shortest_path(G, origin_yx, destination_yx)
     filepath = 'route.html'
     rc = ['r', 'g', 'y']
@@ -747,5 +759,6 @@ def routesComputing(originy, originx, destinationy, destinationx, city,
     mapFolium(G2, route, fastroute, mixroute, filepath, origin_yx,
               destination_yx, city, networktype)
     return export(G2, route, "lesspollutedroute.csv"), export(
-        G2, fastroute, "fastestroute.csv"), export(G2, mixroute,
-                                                   "mixroute.csv")
+        G2, fastroute, "fastestroute.csv"), export(
+            G2, mixroute, "mixroute.csv"
+        ), lesspollutedpathweight, fastroutepathweight, mixedpathweight

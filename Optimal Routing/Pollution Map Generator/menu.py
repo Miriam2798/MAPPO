@@ -35,7 +35,7 @@ def menu():
  /  \ /  \  /  /_\  \|     ___/|     ___//   |   \ 
 /    Y    \/    |    \    |    |    |   /    |    \
 \____|__  /\____|__  /____|    |____|   \_______  /
-        \/         \/                           \/ v0.3 """)
+        \/         \/                           \/ v0.4 """)
     time.sleep(1)
     print("1. Simulate Pollution Map \n")
     print("2. Calculate the 3 routes \n")
@@ -97,7 +97,7 @@ while True:
                              destination_yx[1], city, 100, 4, G, networktype)
             print("Pollution values updated. \n")
         elif pollutionMap:
-            nodelistpolluted, nodelistfast, nodelistmix = api.routesComputing(
+            nodelistpolluted, nodelistfast, nodelistmix, lesspollutedweight,fastweight,mixedweight = api.routesComputing(
                 origin_yx[0], origin_yx[1], destination_yx[0],
                 destination_yx[1], city, networktype)
             lesspollutedsum = 0
@@ -120,6 +120,10 @@ while True:
                             ((lesspollutedsum / fastsum) * 100), 2)) + "%\n")
             print("Exposure to Pollution reduction (YELLOW ROUTE):" +
                   str(round(100 - ((mixsum / fastsum) * 100), 2)) + "%\n")
+            print("Less polluted route Edges weight: "+str(lesspollutedweight)+"")
+            print("Shortest route Edges weight: "+str(fastweight)+"")
+            print("Mixed route Edges weight: "+str(mixedweight)+"")
+
         exitwait = input("Press any key...")
     elif choice == "3":
         loop = False
