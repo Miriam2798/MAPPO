@@ -1,11 +1,6 @@
-import fastestpath as fp
-import pollutionmap as pm
-import transformap as tm
 import time
 import os
 import mappoAPI as api
-import networkx as nx
-import osmnx as ox
 from termcolor import colored
 
 
@@ -97,9 +92,12 @@ while True:
                              destination_yx[1], city, 100, 4, G, networktype)
             print("Pollution values updated. \n")
         elif pollutionMap:
-            nodelistpolluted, nodelistfast, nodelistmix, lesspollutedweight,fastweight,mixedweight = api.routesComputing(
+            tic = time.time()
+            nodelistpolluted, nodelistfast, nodelistmix, lesspollutedweight, fastweight, mixedweight = api.routesComputing(
                 origin_yx[0], origin_yx[1], destination_yx[0],
                 destination_yx[1], city, networktype)
+            toc = time.time()
+            print("Time: " + str(toc - tic))
             lesspollutedsum = 0
             fastsum = 0
             mixsum = 0
@@ -109,20 +107,19 @@ while True:
                 fastsum += nodelistfast[i].getValue()
             for i in range(len(nodelistmix)):
                 mixsum += nodelistmix[i].getValue()
-            print("\n(GREEN ROUTE) Less Pollute Route Pollution: " +
-                  str(lesspollutedsum) + "\n")
-            print("\n(YELLOW ROUTE) Combined Pollution/distance Pollution: " +
-                  str(mixsum) + "\n")
-            print("\n(RED ROUTE) Shortest Route Pollution: " + str(fastsum) +
-                  "\n")
+            print("(GREEN ROUTE) Less polluted route Edges weight: " +
+                  str(lesspollutedweight) + "\n")
+            print("(RED ROUTE) Shortest route Edges weight: " +
+                  str(fastweight) + "\n")
+            print("(YELLOW ROUTE) Mixed route Edges weight: " +
+                  str(mixedweight) + "\n")
             print("\nExposure to Pollution reduction (GREEN ROUTE): " +
                   str(round(100 -
-                            ((lesspollutedsum / fastsum) * 100), 2)) + "%\n")
+                            ((lesspollutedweight / fastweight) * 100), 2)) +
+                  "%\n")
             print("Exposure to Pollution reduction (YELLOW ROUTE):" +
-                  str(round(100 - ((mixsum / fastsum) * 100), 2)) + "%\n")
-            print("Less polluted route Edges weight: "+str(lesspollutedweight)+"")
-            print("Shortest route Edges weight: "+str(fastweight)+"")
-            print("Mixed route Edges weight: "+str(mixedweight)+"")
+                  str(round(100 -
+                            ((mixedweight / fastweight) * 100), 2)) + "%\n")
 
         exitwait = input("Press any key...")
     elif choice == "3":
@@ -130,4 +127,4 @@ while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         break
     else:
-        input("Wrong Option. Press any key to try again")
+        input("Wrong Option. Press any key to try again\n")
