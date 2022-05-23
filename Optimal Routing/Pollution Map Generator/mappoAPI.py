@@ -1,4 +1,3 @@
-#Pollution Map Generator
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,31 +13,109 @@ from pandas.core.common import SettingWithCopyWarning
 import pandas as pd
 import folium
 from folium.plugins import HeatMap
-import taxicab as tc
-import multiprocessing as mp
-from pathos.multiprocessing import ProcessingPool as Pool
 from shapely.geometry import shape
 import math
 import geopandas as gp
 import ast
 from networkx.classes.function import path_weight
+import geopy.distance
 
 
-#Remove warnings
+class Point:
+    """Defines a Point object with its own atributes Point(float y, float x, 
+    float PollutionValue,int node, tuple edge)
+    """
+
+    # Constructor
+    def __init__(self, y, x, value):
+        self.y = y
+        self.x = x
+        self.value = value
+
+    # ToString function
+    def __repr__(self):
+        return f"[{self.y}, {self.x}, {self.value}]"
+
+    # Getters
+    def getY(self):
+        return self.y
+
+    def getX(self):
+        return self.x
+
+    def getValue(self):
+        return self.value
+
+    def getNode(self):
+        return self.node
+
+    def getNdist(self):
+        return self.ndist
+
+    # Setters
+    def setNode(self, node):
+        self.node = node
+
+    def setNdist(self, ndist):
+        self.ndist = ndist
+
+
+class Node:
+    """Definition of a node object, with its attributes Node(float y, float x, int id, float value)
+    """
+
+    # Constructor
+    def __init__(self, y, x, id, value):
+        self.y = y
+        self.x = x
+        self.id = id
+        self.value = value
+
+    # ToString function. Returns the id, and y, x coordinates
+    def __repr__(self):
+        return f"{self.id}, {self.y}, {self.x},{self.value}"
+
+    def getValue(self):
+        return self.value
+
+
 def removeWarnings():
+    """Remove warnings
+    """
     warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
     warnings.simplefilter("ignore", UserWarning)
     warnings.filterwarnings("ignore", category=FutureWarning)
 
 
-# Heatmap Plotting function
 def data_coord2view_coord(p, vlen, pmin, pmax):
+    """Heatmap Plotting function
+
+    Args:
+        p (int): P parameter
+        vlen (int): vlen parameter
+        pmin (int): pmin parameter
+        pmax (int): pmax parameter
+
+    Returns:
+        int: parameter
+    """
     dp = pmax - pmin
     return (p - pmin) / dp * vlen
 
 
-# Nearest Neighbour
 def nearest_neighbours(xs, ys, reso, n_neighbours):
+    """Uses the nearest neighbor to smooth the cells and create a pollution simulation
+
+    Args:
+        xs (_type_): X parameter
+        ys (_type_): Y parameter
+        reso (_type_): Number of cells to generate (Resolution)
+        n_neighbours (_type_): Nearest Neighbour factor
+
+    Returns:
+        Array of arrays: Array with pollution values
+        Array: Array of border values
+    """
     im = np.zeros([reso, reso])
     extent = [np.min(xs), np.max(xs), np.min(ys), np.max(ys)]
     xv = data_coord2view_coord(xs, reso, extent[0], extent[1])
@@ -52,13 +129,23 @@ def nearest_neighbours(xs, ys, reso, n_neighbours):
     return im, extent
 
 
-# Export to csv file called map.csv
 def exportMap(im):
+    """Export to csv file called map.csv
+
+    Args:
+        im (Array of arrays): Array with pollution values
+    """
     np.savetxt("map.csv", im, delimiter=",")
 
 
-#Pollution Map Generator function
 def pollutionMapGenerator(generated_points, resolution, nn):
+    """Generates an array of arrays with the given resolution and nearest neighbor factor. Uses the given generated points to do a gaussian mixture. 
+
+    Args:
+        generated_points (int): Number of desired points to be generaterd
+        resolution (int): Number of cells to generate (Resolution)
+        nn (int): Nearest Neighbour factor.
+    """
     removeWarnings()
     # Generating random normal values from (0,1)
     x = np.random.randn(int(generated_points))
@@ -102,28 +189,17 @@ def mainPollutionMapGenerator():
     return generated_points, resolution, nn
 
 
-#Fastest Route Computing
-
-
-#Definition of a node object, with its attributes Node(float y, float x, int id)
-class Node:
-
-    def __init__(self, y, x, id, value):  #, value
-        self.y = y
-        self.x = x
-        self.id = id
-        self.value = value
-
-    # ToString function. Returns the id, and y, x coordinates
-    def __repr__(self):
-        return f"{self.id}, {self.y}, {self.x},{self.value}"
-
-    def getValue(self):
-        return self.value
-
-
-# If exists, imports the graph from the file. The file is created after searching for a place once and for each one
 def importFile(place, networktype):
+    """If exists, imports the graph from the file. 
+    The file is created after searching for a place once and for each one
+
+    Args:
+        place (string): Name of the city
+        networktype (string): type of transport to use
+
+    Returns:
+        MultiDiGraph: Multi dimensional Graph containing nodes and edges
+    """
     if os.path.exists(f'{place}_graph_'
                       f'{networktype}.txt'):
         return ox.load_graphml(f'{place}_graph_'
@@ -136,154 +212,30 @@ def importFile(place, networktype):
     return G
 
 
-def mainFastestRoute():
-    print(
-        r"""___________                __                   __    __________         __  .__     
-\_   _____/____    _______/  |_  ____   _______/  |_  \______   \_____ _/  |_|  |__  
- |    __) \__  \  /  ___/\   __\/ __ \ /  ___/\   __\  |     ___/\__  \\   __\  |  \ 
- |     \   / __ \_\___ \  |  | \  ___/ \___ \  |  |    |    |     / __ \|  | |   Y  \
- \___  /  (____  /____  > |__|  \___  >____  > |__|    |____|    (____  /__| |___|  /
-     \/        \/     \/            \/     \/                         \/          \/"""
-    )
-    time.sleep(1)
-    place = input("Please, insert the place name: (example: Barcelona) \n")
-    originx, originy = input(
-        "Please, insert the origin coordinates: (example: 41.59047, 2.45235) \n"
-    ).split(", ")
-    destinationx, destinationy = input(
-        "Please, insert the destination coordinates: (example: 41.59047, 2.45235) \n"
-    ).split(", ")
-    return place, tuple((originx, originy)), tuple(
-        (destinationx, destinationy))
-
-
-# Calculates the fastest route of a place
-def fastest_route(originx, originy, destinationx, destinationy, place,
-                  networktype):
-    removeWarnings()
-    #Imports the graph
-    G = importFile(place, networktype)
-    #Generates tuples from the given coordinates
-    origin_xy = tuple((float(originx), float(originy)))
-    destination_xy = tuple((float(destinationx), float(destinationy)))
-    #Finds the nearest node from a location point
-    origin_node = ox.get_nearest_node(G, origin_xy)
-    destination_node = ox.get_nearest_node(G, destination_xy)
-    #Finds the shortest path and stores it into the route object. Using length argument to find the shortest path in terms of length
-    route = nx.shortest_path(G=G,
-                             source=origin_node,
-                             target=destination_node,
-                             weight='length')
-    #Using Taxicab library to normalize the start and end of the route, as it won't always start in a node location
-    routeTC = tc.distance.shortest_path(G, origin_xy, destination_xy)
-    filename = "fastestroute.csv"
-    fig, ax = tc.plot.plot_graph_route(
-        G,
-        routeTC,
-        route_color="r",
-        orig_dest_size=100,
-        ax=None,
-    )
-    return export(G, route, filename)
-
-
-#Exports the route into a route.csv file
 def export(G, routeTC, filename):
+    """Exports the route into a route.csv file
+
+    Args:
+        G (MultiDiGraph): Multi dimensional Graph containing nodes and edges
+        routeTC (List of int): list of nodes IDs
+        filename (string): string with the name of the file
+
+    Returns:
+        List: returns a list with the coordinates, node ID and pollution values
+    """
     nodelist = []
-    #Iterate the nodes to extrat all the coordinates along with its ids
+    # Iterate the nodes to extrat all the coordinates along with its ids
     for i in range(int(len(routeTC))):
         y = G.nodes[routeTC[i]]['y']
         x = G.nodes[routeTC[i]]['x']
         value = G.nodes[routeTC[i]]['Pollution']
         nodelist.append(Node(y, x, routeTC[i], value))
-    #Create and write the node stored into nodelist to a route.csv file
+    # Create and write the node stored into nodelist to a route.csv file
     with open(filename, "w") as output:
         writer = csv.writer(output, lineterminator='\n')
         for val in nodelist:
             writer.writerow([val])
     return nodelist
-
-
-def exportTC(G, routeTC, filename):
-    nodelist = []
-    #Iterate the nodes to extrat all the coordinates along with its ids
-    for i in range(int(len(routeTC[1]))):
-        y = G.nodes[routeTC[1][i]]['y']
-        x = G.nodes[routeTC[1][i]]['x']
-        nodelist.append(Node(y, x, routeTC[1][i]))
-    #Create and write the node stored into nodelist to a route.csv file
-    with open(filename, "w") as output:
-        writer = csv.writer(output, lineterminator='\n')
-        for val in nodelist:
-            writer.writerow([val])
-    return nodelist[0]
-
-
-#Fastest Route function
-def fastestRoute(place, originx, originy, destinationx, destinationy):
-    removeWarnings()
-    #Calculate fastest route given the inputs
-    routeTC, G, route = fastest_route(originx, originy, destinationx,
-                                      destinationy, place)
-    #Plot the route in red color
-    fig, ax = tc.plot.plot_graph_route(
-        G,
-        routeTC,
-        route_color="r",
-        orig_dest_size=100,
-        ax=None,
-    )
-    filename = "fastestroute.csv"
-    return exportTC(G, routeTC, filename)
-
-
-#Less Polluted Route
-#Defines a Point object with its own atributes Point(float y, float x, float PollutionValue,int node, tuple edge)
-class Point:
-
-    def __init__(self, y, x, value):
-        self.y = y
-        self.x = x
-        self.value = value
-
-    #ToString function
-    def __repr__(self):
-        return f"[{self.y}, {self.x}, {self.value}]"
-
-    #Getters
-    def getY(self):
-        return self.y
-
-    def getX(self):
-        return self.x
-
-    def getValue(self):
-        return self.value
-
-    def getNode(self):
-        return self.node
-
-    # def getEdge(self):
-    #     return self.edge
-
-    def getNdist(self):
-        return self.ndist
-
-    # def getEdgeVal(self):
-    #     return self.edgeVal
-
-    #Setters
-    def setNode(self, node):
-        self.node = node
-
-    # def setEdge(self, edge):
-    #     self.edge = edge
-
-    def setNdist(self, ndist):
-        self.ndist = ndist
-
-    # def setEdgeVal(self, edgeVal):
-    #     self.edgeVal = edgeVal
 
 
 def dataMapping(origin_yx, destination_yx, city, reso, increment, networktype):
@@ -332,7 +284,8 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment, networktype):
     points = []
     y = float(round(ymax, increment))
     x = float(round(xmin, increment))
-    #Iteration that gives geolocation values to every value in the pollution matrix. Objects Point(y,x,value) are stored into a points list
+    # Iteration that gives geolocation values to every value in the pollution matrix.
+    # Objects Point(y,x,value) are stored into a points list
     for row in range(len(pollutionMatrix)):
         for col in range(len(pollutionMatrix[row])):
             if x > round(xmax, increment):
@@ -363,7 +316,7 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment, networktype):
     fig, ax = plt.subplots(figsize=(12, 6))
     worldmap.plot(color="lightgrey", ax=ax)
 
-    # Plotting our Impact Energy data with a color map
+    # Plotting our Pollution data with a color map
     x = df['Longitude']
     y = df['Latitude']
     z = df['value']
@@ -378,8 +331,21 @@ def dataMapping(origin_yx, destination_yx, city, reso, increment, networktype):
     return points
 
 
-#set values to edges in MultiDiGraph G
 def set_values_to_edges(points, G, nodes, increment):
+    """Gives Pollution values to edges. If an edge has geometry, it exports the coordinates of 
+    the LineString that conforms the edge and calculates the average of pollution. For mix attribute, 
+    it gives an average value between normalized length and pollution value
+
+    Args:
+        points (list of Points): list of points, with coordinates, node ID and pollution value
+        G (MultiDiGraph): Multi dimensional Graph containing nodes and edges
+        nodes (GeoDataFrame): GeoDataframe with nodes and their information
+        increment (int): Number of decimals used for the coordinates (Latitude and Longitude number of decimals)
+
+    Returns:
+        MultiDiGraph: Multi dimensional Graph containing nodes and edges
+        List: list with edge ID and its coordinates 
+    """
     edges = []
     coords = []
     lengthmax = 0
@@ -389,9 +355,6 @@ def set_values_to_edges(points, G, nodes, increment):
         if not 'geometry' in G[u][v][k]:
             G[u][v][k]['Pollution'] = (
                 (nodes['Pollution'][u] + nodes['Pollution'][v]) / 2)
-            # print("Edge " + str(G[u][v][k]) + " has a length of " +
-            #       str(G[u][v][k]['length']) +
-            #       " which is less than 1000 meters\n")
             edges.append(tuple((u, v)))
             coords.append(None)
         else:
@@ -426,8 +389,18 @@ def set_values_to_edges(points, G, nodes, increment):
     return G, data
 
 
-#Set pollution values to nodes
 def set_values_to_nodes(points, nodes, G):
+    """Checks what is the nearest point to a node using distances and assigns
+    the pollution value to it.
+
+    Args:
+        points (list of Points): list of points, with coordinates, node ID and pollution value
+        nodes (GeoDataFrame): GeoDataframe with nodes and their information
+        G (MultiDiGraph): Multi dimensional Graph containing nodes and edges
+
+    Returns:
+        GeoDataFrame: Returns a geodataframe with nodes and their new attribute called Pollution
+    """
     pdist = 0
     first = True
     nodes['Pollution'] = float(0)
@@ -452,16 +425,27 @@ def set_values_to_nodes(points, nodes, G):
     return nodes
 
 
-#Export map as route.html using folium
 def mapFolium(G2, route, fastroute, mixroute, filepath, originyx,
               destinationyx, city, networktype):
+    """Export map as route.html using folium with 3 differents routes, and an overlay of a HeatMap
+    representing the pollution in the area.
+
+    Args:
+        G2 (MultiDiGraph): Multi dimensional Graph containing nodes and edges
+        route (int list): list of nodes IDs of the less polluted route
+        fastroute (int list): list of nodes IDs of the shortest route
+        mixroute (int list): list of nodes IDs of the combined route
+        filepath (string): name and path of the file 
+        originyx (float tuple): tuple with the origin coordinates
+        destinationyx (float tuple): tuple with the destination coordinates
+        city (string): name of the city
+        networktype (string): type of transport to use
+    """
     d = pd.read_csv('points_' + city + '_' + networktype + '.csv')
     df = pd.DataFrame(d)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df.loc[:, ~df.columns.str.contains('node')]
-    # df = df.loc[:, ~df.columns.str.contains('edge')]
     df = df.loc[:, ~df.columns.str.contains('ndist')]
-    # df = df.loc[:, ~df.columns.str.contains('edist')]
 
     route_map = ox.plot_route_folium(G2, route, route_color='#32CD32')
     route_map = ox.plot_route_folium(G2,
@@ -473,17 +457,6 @@ def mapFolium(G2, route, fastroute, mixroute, filepath, originyx,
                                      route_color='#ffff00',
                                      route_map=route_map)
     HeatMap(data=df, radius=15, max_zoom=13).add_to(route_map)
-    #HeatMap(df, radius=15, min_opacity=0.4, max_zoom=1000).add_to(route_map)
-    # HeatMap(df,
-    #         radius=10,
-    #         max_zoom=10,
-    #         gradient={
-    #             0.05: 'blue',
-    #             0.1: 'lime',
-    #             0.25: 'yellow',
-    #             0.3: 'orange',
-    #             0.4: 'red'
-    #         }).add_to(route_map)
     folium.Marker(location=[originyx[0], originyx[1]],
                   popup='Origen').add_to(route_map)
     folium.Marker(location=[destinationyx[0], destinationyx[1]],
@@ -553,9 +526,18 @@ def mainLessPollutedRoute():
     return city, origin_yx, destination_yx, nodes, edges, G, update, networktype
 
 
-def importFileFromPoint(place, originy, originx, destinationy, destinationx,
+def importFileFromPoint(originy, originx, destinationy, destinationx,
                         networktype):
+    """Imports a partitioned graph given the coordinates of the origin and destination
+    points of the route. Currently not used, but created for further implementation
 
+    Args:
+        originy (float): latitude of the origin point
+        originx (float): longitude of origin point
+        destinationy (float): latitude of the destination point
+        destinationx (float): longitude of the destination point
+        networktype (string): type of transport to use
+    """
     center_pointx = (originx + destinationx) / 2
     center_pointy = (originy + destinationy) / 2
     center_point = tuple((center_pointy, center_pointx))
@@ -568,9 +550,22 @@ def importFileFromPoint(place, originy, originx, destinationy, destinationx,
     fig, ax = ox.plot_graph(G5, node_size=0, edge_linewidth=3)
 
 
-#Less Polluted route function
 def updateValues(originx, originy, destinationx, destinationy, city, reso,
                  increment, G, networktype):
+    """In order to save computation time, this functions checks if points.csv and edges.csv 
+    exist and updates them. If not, it creates them.
+
+    Args:
+        originx (float): longitude of origin point
+        originy (float): latitude of origin point
+        destinationx (float): longitude of destination point
+        destinationy (float): latitude of destination point
+        city (string): name of the city
+        reso (int): resolution of the pollution matrix
+        increment (int): Number of decimals used for the coordinates (Latitude and Longitude number of decimals)
+        G (MultiDiGraph): Multi dimensional Graph containing nodes and edges
+        networktype (string): type of transport to use
+    """
     removeWarnings()
     tic = time.time()
     nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
@@ -579,14 +574,14 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
                                                  networktype + '.csv'):
         d = pd.read_csv('points_' + city + '_' + networktype + '.csv')
         df = pd.DataFrame(d)
-        #nodes
+        # nodes
         df = df.sort_values(by=['ndist'])
         df = df.drop_duplicates(keep='first', subset='node')
         nodes['Pollution'] = float(0)
         for ind in df.index:
             nodes['Pollution'][int(df['node'][ind])] = df['value'][ind]
         G = ox.graph_from_gdfs(nodes, edges)
-        #edges
+        # edges
         dedges = pd.read_csv('edges_' + city + '_' + networktype + '.csv')
         dfedges = pd.DataFrame(dedges)
         dfedges = dfedges.loc[:, ~dfedges.columns.str.contains('^Unnamed')]
@@ -628,17 +623,6 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         print("\nFirst time running the script. Mapping the data...\n")
         points = dataMapping(origin_yx, destination_yx, city, reso, increment,
                              networktype)
-
-        # cores = mp.cpu_count()
-        # points_split = np.array_split(points, cores, axis=0)
-        # print(points_split)
-        # pool = Pool(cores)
-        # nodes = np.vstack(
-        # pool.map(set_values_to_nodes(points, nodes, Gnx), points_split))
-        # pool.close()
-        # pool.join()
-        # pool.clear()
-
         tic = time.time()
         nodes = set_values_to_nodes(points, nodes, G)
         toc = time.time()
@@ -655,25 +639,19 @@ def updateValues(originx, originy, destinationx, destinationy, city, reso,
         lon = []
         val = []
         node = []
-        #edge = []
         ndist = []
-        #edgeval = []
         for p in range(len(points)):
             lat.append(points[p].getY())
             lon.append(points[p].getX())
             val.append(points[p].getValue())
             node.append(points[p].getNode())
-            #edge.append(points[p].getEdge())
             ndist.append(points[p].getNdist())
-            #edgeval.append(points[p].getEdgeVal())
         d = {
             'lat': lat,
             'lon': lon,
             'value': val,
             'node': node,
-            #'edge': edge,
             'ndist': ndist,
-            #'edist': edist
         }
         df = pd.DataFrame(d)
         df.to_csv('points_' + city + '_' + networktype + '.csv')
@@ -748,7 +726,6 @@ def routesComputing(originy, originx, destinationy, destinationx, city,
     lesspollutedpathweight = path_weight(G2, route, weight="Pollution")
     fastroutepathweight = path_weight(G2, fastroute, weight="Pollution")
     mixedpathweight = path_weight(G2, mixroute, weight="Pollution")
-    #routeTC = tc.distance.shortest_path(G, origin_yx, destination_yx)
     filepath = 'route.html'
     rc = ['r', 'g', 'y']
     ec = ox.plot.get_edge_colors_by_attr(G2, 'Pollution', cmap='autumn')
