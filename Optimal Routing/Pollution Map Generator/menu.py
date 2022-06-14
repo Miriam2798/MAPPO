@@ -92,12 +92,9 @@ while True:
                              destination_yx[1], city, 100, 4, G, networktype)
             print("Pollution values updated. \n")
         elif pollutionMap:
-            tic = time.time()
             nodelistpolluted, nodelistfast, nodelistmix, lesspollutedweight, fastweight, mixedweight = api.routesComputing(
                 origin_yx[0], origin_yx[1], destination_yx[0],
                 destination_yx[1], city, networktype)
-            toc = time.time()
-            print("Time: " + str(toc - tic))
             lesspollutedsum = 0
             fastsum = 0
             mixsum = 0

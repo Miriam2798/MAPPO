@@ -456,7 +456,17 @@ def mapFolium(G2, route, fastroute, mixroute, filepath, originyx,
                                      mixroute,
                                      route_color='#ffff00',
                                      route_map=route_map)
-    HeatMap(data=df, radius=15, max_zoom=13).add_to(route_map)
+    HeatMap(data=df,
+            radius=10,
+            max_zoom=30,
+            blur=20,
+            overlay=True,
+            gradient={
+                0.2: 'blue',
+                0.4: 'green',
+                0.6: 'orange',
+                0.8: 'red'
+            }).add_to(route_map)
     folium.Marker(location=[originyx[0], originyx[1]],
                   popup='Origen').add_to(route_map)
     folium.Marker(location=[destinationyx[0], destinationyx[1]],
@@ -711,6 +721,7 @@ def routesComputing(originy, originx, destinationy, destinationx, city,
     destination_yx = tuple((float(destinationy), float(destinationx)))
     origin_node = ox.get_nearest_node(G2, origin_yx)
     destination_node = ox.get_nearest_node(G2, destination_yx)
+    tic = time.time()
     route = nx.shortest_path(G=G2,
                              source=origin_node,
                              target=destination_node,
@@ -723,6 +734,8 @@ def routesComputing(originy, originx, destinationy, destinationx, city,
                                 source=origin_node,
                                 target=destination_node,
                                 weight='mix')
+    toc = time.time()
+    print("Time: " + str(toc - tic))
     lesspollutedpathweight = path_weight(G2, route, weight="Pollution")
     fastroutepathweight = path_weight(G2, fastroute, weight="Pollution")
     mixedpathweight = path_weight(G2, mixroute, weight="Pollution")
