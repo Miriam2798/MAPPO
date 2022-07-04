@@ -17,7 +17,6 @@
 
 def score(vehicle, route, score, km): #iterable i start
     """Score compute"""
-
     if(vehicle == 0 or vehicle == 1 or vehicle == 2 or vehicle == 3 or vehicle == 4 or vehicle == 5 or vehicle == 6):
         score += 40
     elif(vehicle == 7):
