@@ -8,7 +8,8 @@
 #E-motorbike 5
 #E-car 6
 #Hybrid Car 7
-#Diesel/Gasoline car 8
+#Diesel car 8
+#Gasoline car 9
 #Mopeds and Motorcycle 9
 
 #Route param: 
@@ -16,19 +17,14 @@
 
 def score(vehicle, route, score, km): #iterable i start
     """Score compute"""
-
-    if(vehicle == 0 or vehicle == 1 or vehicle == 2):
-        score += 60
-    elif(vehicle == 3):
-        score += 50
-    elif(vehicle == 4):
+    if(vehicle == 0 or vehicle == 1 or vehicle == 2 or vehicle == 3 or vehicle == 4 or vehicle == 5 or vehicle == 6):
         score += 40
-    elif(vehicle == 5):
-        score += 30
-    elif(vehicle == 6):
-        score += 20
     elif(vehicle == 7):
-        score += 10
+        score += 37
+    elif(vehicle == 8):
+        score += 32
+    elif(vehicle == 9):
+        score += 21
     else:
         score += 0
 
@@ -45,4 +41,3 @@ def score(vehicle, route, score, km): #iterable i start
 score0 = score(5,"W",50,1) 
 print('score: ')
 print(score0)
-
